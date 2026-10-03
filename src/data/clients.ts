@@ -1,0 +1,60 @@
+import { ClientProfile, TeamMember } from "@/types/portal";
+
+export const mockClientProfile: ClientProfile = {
+  id: "client-001",
+  name: "Sunil Deshmukh",
+  company: "Hitachi Payment Services",
+  initials: "SD",
+  email: "sunil.d@hitachi-payments.com",
+  phone: "+91 98201 44521",
+  role: "Head of National ATM Infrastructure & Banking Deployments",
+  address: "Hitachi Payment Services HQ, Bandra-Kurla Complex, Mumbai – 400051",
+  unreadNotifications: 3,
+};
+
+export const mockTeamMembers: TeamMember[] = [
+  {
+    id: "tm-1",
+    name: "Vikram Malhotra",
+    role: "Senior Account Director",
+    department: "Client Relations & Strategy",
+    email: "vikram.m@aceselect.in",
+    phone: "+91 98200 11223",
+    photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80",
+    experience: "14+ Years in Retail Architecture",
+    availableHours: "9:00 AM – 7:30 PM (Mon - Sat)",
+  },
+  {
+    id: "tm-2",
+    name: "Aakash Mehta",
+    role: "Lead Project Engineer",
+    department: "Structural & Facade Engineering",
+    email: "aakash.m@aceselect.in",
+    phone: "+91 98330 44556",
+    photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80",
+    experience: "10+ Years in Pan-India Rollouts",
+    availableHours: "8:30 AM – 8:00 PM (Mon - Sat)",
+  },
+  {
+    id: "tm-3",
+    name: "Pooja Deshpande",
+    role: "Quality Assurance & Compliance Head",
+    department: "ISO 9001:2015 Audit Team",
+    email: "pooja.d@aceselect.in",
+    phone: "+91 98199 77889",
+    photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&q=80",
+    experience: "8+ Years in Material Inspection",
+    availableHours: "9:30 AM – 6:30 PM (Mon - Fri)",
+  },
+  {
+    id: "tm-4",
+    name: "Karan Verma",
+    role: "Regional Operations Manager (North)",
+    department: "On-Ground Installation Logistics",
+    email: "karan.v@aceselect.in",
+    phone: "+91 98101 22334",
+    photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&q=80",
+    experience: "12+ Years Field Operations",
+    availableHours: "24/7 Deployment Escalations",
+  },
+];

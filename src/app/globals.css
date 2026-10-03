@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+@theme {
+  --color-solvorry-dark: #0B0F2B;
+  --color-solvorry-mid: #192561;
+  --color-solvorry-DEFAULT: #283A97;
+  --color-solvorry-light: #4A60D4;
+  --color-solvorry-accent: #06B6D4;
+  
+  --font-display: var(--font-jakarta);
+  --font-body: var(--font-jakarta);
+  
+  --animate-marquee: marquee 35s linear infinite;
+  
+  @keyframes marquee {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+}
+
+:root {
+  --font-jakarta: "Plus Jakarta Sans", sans-serif;
+}
+
+/* Custom scrollbar - thin, minimalist */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #F7F8FA;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Selection color */
+::selection {
+  background-color: #283A97;
+  color: #ffffff;
+}
+
+/* Smooth anchor scroll offset for sticky nav & prevent horizontal page overflow */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
+html {
+  scroll-padding-top: 80px;
+  scroll-behavior: smooth;
+}
+
+/* Section spacing utility */
+.section-padding {
+  padding-top: clamp(4rem, 8vw, 7rem);
+  padding-bottom: clamp(4rem, 8vw, 7rem);
+}
+
+/* Text balancing */
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid #283A97;
+  outline-offset: 2px;
+}
+
+/* Marquee animations */
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes marquee-reverse {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(0%); }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+.animate-marquee-reverse {
+  animation: marquee-reverse 35s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-reverse:hover {
+  animation-play-state: paused;
+}
+
+/* 3D signage effect utilities */
+.perspective-container {
+  perspective: 1200px;
+  perspective-origin: center center;
+}
+
+.brand-card-3d {
+  transform-style: preserve-3d;
+  background: linear-gradient(145deg, #ffffff 0%, #f9fafb 55%, #eef2f6 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.95);
+  border-left: 1px solid rgba(255, 255, 255, 0.9);
+  border-bottom: 3px solid #cbd5e1;
+  border-right: 2px solid #e2e8f0;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.03),
+    0 8px 16px -2px rgba(40, 58, 151, 0.08),
+    0 16px 28px -4px rgba(11, 15, 43, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -2px 2px rgba(0, 0, 0, 0.03);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+}
+
+.brand-card-3d:hover {
+  transform: translateY(-8px) scale(1.04);
+  border-bottom-color: #283A97;
+  border-right-color: #4A60D4;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.04),
+    0 16px 32px -4px rgba(40, 58, 151, 0.22),
+    0 28px 50px -8px rgba(11, 15, 43, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -2px 0 rgba(40, 58, 151, 0.15);
+}
+
+.text-3d-extrusion {
+  text-shadow: 
+    0 1px 0 #ffffff,
+    1px 1px 0 #d1d5db,
+    2px 2px 0 #9ca3af,
+    3px 4px 7px rgba(11, 15, 43, 0.2);
+}
