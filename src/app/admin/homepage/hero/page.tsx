@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Save, Eye, Info, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { generateVideoThumbnail } from "@/lib/videoUtils";
 
 const DEFAULT_HERO = {
   eyebrow_text: "INDIAN OEM & MANUFACTURER | ACTIVE LED & DIGITAL SIGNAGE",
@@ -15,6 +16,8 @@ const DEFAULT_HERO = {
   cta_secondary_href: "/contact",
   bottom_tagline: "PROFESSIONALLY ENGINEERED\nAPPLICATION-SPECIFIC DISPLAY SYSTEMS",
   vertical_labels: ["GOVERNMENT", "BANKING", "CORPORATE", "INSTITUTIONAL", "COMMERCIAL", "MISSION-CRITICAL"],
+  background_video_url: "/videos/homepage-hero.mp4",
+  poster_url: "",
   is_active: true,
 };
 
@@ -22,6 +25,57 @@ export default function AdminHeroPage() {
   const [form, setForm] = useState(DEFAULT_HERO);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("files", file);
+    
+    // Generate a thumbnail if it's a video
+    if (file.type.startsWith("video/")) {
+      try {
+        const thumbnail = await generateVideoThumbnail(file);
+        formData.append("files", thumbnail);
+      } catch (err) {
+        console.error("Failed to generate thumbnail:", err);
+      }
+    }
+    
+    formData.append("folder", "homepage");
+
+    try {
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.files?.length > 0) {
+        const uploadedVideo = data.files.find((f: any) => f.type === "video");
+        const uploadedImage = data.files.find((f: any) => f.type === "image");
+        
+        if (uploadedVideo) {
+          update("background_video_url", uploadedVideo.url);
+        } else if (data.url && !uploadedVideo) {
+          // fallback if only one file was uploaded and it's not strictly 'video'
+          update("background_video_url", data.url);
+        }
+
+        if (uploadedImage) {
+          update("poster_url", uploadedImage.url);
+        }
+      } else {
+        alert(data.error || "Upload failed");
+      }
+    } catch (err) {
+      alert("An error occurred during upload.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   function update(key: keyof typeof form, value: unknown) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -96,6 +150,59 @@ export default function AdminHeroPage() {
                 <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">Bottom Tagline</label>
                 <textarea value={form.bottom_tagline} onChange={(e) => update("bottom_tagline", e.target.value)} rows={2} className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#283A97]/20 focus:border-[#283A97] resize-none" />
                 <p className="text-xs text-neutral-400">Text shown at the bottom left. Use \n for line breaks.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Media */}
+          <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-neutral-100 bg-neutral-50">
+              <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">Background Video</h3>
+            </div>
+            <div className="p-6 space-y-5">
+              <div className="space-y-3">
+                <p className="text-xs text-neutral-500">Upload the video file that will play in the background of the hero section.</p>
+                
+                {form.background_video_url && (
+                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                    <div className="flex items-center gap-2 truncate pr-4">
+                      <div className="w-8 h-8 bg-[#283A97]/10 rounded flex items-center justify-center shrink-0">
+                        <Info className="w-4 h-4 text-[#283A97]" />
+                      </div>
+                      <div className="truncate">
+                        <p className="text-xs font-semibold text-blue-900">Current Video</p>
+                        <p className="text-xs text-blue-700 truncate">{form.background_video_url.split('/').pop() || form.background_video_url}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="relative group">
+                  <input 
+                    type="file" 
+                    accept="video/*,image/*"
+                    onChange={handleUpload}
+                    disabled={uploading}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10" 
+                    title="Upload new video"
+                  />
+                  <div className={`w-full flex flex-col items-center justify-center py-8 px-4 border-2 border-dashed rounded-xl transition-colors ${uploading ? 'bg-neutral-50 border-neutral-200' : 'bg-neutral-50/50 border-neutral-300 group-hover:bg-blue-50 group-hover:border-[#283A97]/40'}`}>
+                    {uploading ? (
+                      <div className="flex flex-col items-center gap-2 text-neutral-500">
+                        <RefreshCw className="w-6 h-6 animate-spin" />
+                        <span className="text-sm font-medium">Uploading video... Please wait</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-neutral-600">
+                        <div className="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center border border-neutral-200 mb-1 group-hover:text-[#283A97] group-hover:border-[#283A97]/30 transition-colors">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        </div>
+                        <span className="text-sm font-semibold">Click or drag video to upload</span>
+                        <span className="text-xs text-neutral-400">Supports MP4, WebM (Max 50MB)</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

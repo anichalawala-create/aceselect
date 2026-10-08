@@ -121,6 +121,11 @@ const NAV_ITEMS = [
     href: "/admin/settings",
     icon: Settings,
   },
+  {
+    label: "User Manual",
+    href: "/admin/manual",
+    icon: ExternalLink,
+  },
 ];
 
 function NavItem({
