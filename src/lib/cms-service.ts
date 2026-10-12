@@ -148,8 +148,8 @@ const FALLBACK_HERO: HeroContent = {
   cta_secondary_href: "/contact",
   bottom_tagline: "PROFESSIONALLY ENGINEERED\nAPPLICATION-SPECIFIC DISPLAY SYSTEMS",
   vertical_labels: ["GOVERNMENT", "BANKING", "CORPORATE", "INSTITUTIONAL", "COMMERCIAL", "MISSION-CRITICAL"],
-  background_video_url: "/videos/homepage-hero.mp4",
-  poster_url: "",
+  background_video_url: "/home-hero.mp4",
+  poster_url: "/home-hero-poster.jpg",
   is_active: true,
   updated_at: new Date().toISOString(),
 };
@@ -164,8 +164,8 @@ export async function getHeroContent(): Promise<HeroContent> {
       ...FALLBACK_HERO,
       ...cacheHero,
       ...data,
-      background_video_url: (data as any).background_video_url || cacheHero.background_video_url || "/videos/homepage-hero.mp4",
-      poster_url: (data as any).poster_url || cacheHero.poster_url || "",
+      background_video_url: (data as any).background_video_url || cacheHero.background_video_url || "/home-hero.mp4",
+      poster_url: (data as any).poster_url || cacheHero.poster_url || "/home-hero-poster.jpg",
     };
   }
   return { ...FALLBACK_HERO, ...cacheHero };

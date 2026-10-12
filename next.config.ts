@@ -25,6 +25,26 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: "/videos/homepage-hero.mp4",
+        destination: "/home-hero.mp4",
+      },
+      {
+        source: "/videos/home-hero.mp4",
+        destination: "/home-hero.mp4",
+      },
+      {
+        source: "/videos/company-bg.mp4",
+        destination: "/company-hero.mp4",
+      },
+      {
+        source: "/videos/company-hero.mp4",
+        destination: "/company-hero.mp4",
+      },
+    ];
+  },
 };
 
 export default nextConfig;

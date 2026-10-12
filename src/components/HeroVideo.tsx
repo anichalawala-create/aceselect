@@ -16,50 +16,71 @@ export default function HeroVideo({
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Normalize URLs to always point to guaranteed existing assets
+  const effectiveSrc = videoSrc && videoSrc.trim() ? videoSrc : "/home-hero.mp4";
+  const effectivePoster = poster && poster.trim() ? poster : "/home-hero-poster.jpg";
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Check if the video is already buffered / ready
-    if (video.readyState >= 3) {
+    // Browser policy: enforce muted property on DOM node to permit immediate background autoplay
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+
+    const playVideo = () => {
+      const promise = video.play();
+      if (promise !== undefined) {
+        promise
+          .then(() => {
+            setIsVideoLoaded(true);
+          })
+          .catch(() => {
+            // If browser blocks autoplay, poster frame remains smoothly displayed
+          });
+      }
+    };
+
+    if (video.readyState >= 2) {
       setIsVideoLoaded(true);
-      video.play().catch(() => {});
+      playVideo();
+    } else {
+      video.addEventListener("loadeddata", () => setIsVideoLoaded(true), { once: true });
+      video.addEventListener("canplay", () => setIsVideoLoaded(true), { once: true });
+      playVideo();
     }
-  }, []);
+  }, [effectiveSrc]);
 
   const handleVideoReady = () => {
     const video = videoRef.current;
     if (!video) return;
-
     video
       .play()
       .then(() => {
         setIsVideoLoaded(true);
       })
-      .catch(() => {
-        // If autoplay policy blocks playback, poster frame stays smoothly visible
-        setIsVideoLoaded(false);
-      });
+      .catch(() => {});
   };
 
   return (
     <div className={`relative w-full h-full overflow-hidden ${className}`}>
-      {/* 1. Saved Frame: Instant-loading poster to prevent blank screen */}
-      <picture className="absolute inset-0 w-full h-full">
-        {poster && <img
-          src={poster}
-          alt="ACE SELECT LED Digital Displays"
+      {/* 1. Instant-loading high-resolution poster frame (always visible as foundation) */}
+      <picture className="absolute inset-0 w-full h-full pointer-events-none">
+        <img
+          src={effectivePoster}
+          alt="ACE SELECT Active LED Video Walls and Digital Displays"
           fetchPriority="high"
           decoding="async"
           className="w-full h-full object-cover"
-        />}
+        />
       </picture>
 
-      {/* 2. Faststart Optimized Video: Fades in seamlessly once ready */}
+      {/* 2. Hardware-accelerated background video with multi-source fallback */}
       <video
         ref={videoRef}
-        src={videoSrc}
-        poster={poster}
+        poster={effectivePoster}
         preload="auto"
         autoPlay
         loop
@@ -67,12 +88,19 @@ export default function HeroVideo({
         playsInline
         onCanPlay={handleVideoReady}
         onLoadedData={handleVideoReady}
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-out ${
+        onPlaying={() => setIsVideoLoaded(true)}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-out ${
           isVideoLoaded ? "opacity-100" : "opacity-0"
         }`}
-      />
+      >
+        <source src={effectiveSrc} type="video/mp4" />
+        {effectiveSrc !== "/home-hero.mp4" && (
+          <source src="/home-hero.mp4" type="video/mp4" />
+        )}
+        <source src="/videos/homepage-hero.mp4" type="video/mp4" />
+      </video>
 
-      {/* Dark gradient overlay for text readability */}
+      {/* 3. Dark gradient overlay for typography readability */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#0B0F2B] via-[#0B0F2B]/80 to-transparent mix-blend-multiply pointer-events-none" />
       <div className="absolute inset-0 bg-black/30 pointer-events-none" />
     </div>

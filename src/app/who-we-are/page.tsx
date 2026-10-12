@@ -56,13 +56,17 @@ export default async function WhoWeArePage() {
         <div className="absolute inset-0 w-full h-full z-0">
           <div className="absolute inset-0 bg-gradient-to-r from-[#0B0F2B] via-[#0B0F2B]/85 to-[#0B0F2B]/70 z-10" />
           <video 
-            src={company.videoUrl || "/company-hero.mp4"} 
             className="w-full h-full object-cover absolute inset-0" 
+            poster={company.posterUrl || "/home-hero-poster.jpg"}
             autoPlay 
             loop 
             muted 
             playsInline 
-          />
+          >
+            <source src={company.videoUrl || "/company-hero.mp4"} type="video/mp4" />
+            <source src="/company-hero.mp4" type="video/mp4" />
+            <source src="/home-hero.mp4" type="video/mp4" />
+          </video>
         </div>
 
         <div className="max-w-[1600px] w-full mx-auto flex flex-col lg:flex-row relative z-20">
