@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Monitor, Plus, CheckCircle2, Star, ExternalLink, Cpu } from "lucide-react";
 
@@ -70,6 +70,34 @@ const PRODUCTS: Product[] = [
 ];
 
 export default function AdminProductsPage() {
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const res = await fetch("/api/admin/content?section=products");
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          const normalized: Product[] = json.data.map((p: any) => ({
+            id: p.id || p.slug,
+            name: p.name,
+            category: p.category || "Active LED",
+            tagline: p.tagline || "",
+            badge: p.badge || (p.is_featured ? "FEATURED" : "STANDARD"),
+            specs: Array.isArray(p.specs)
+              ? p.specs.map((s: any) => (typeof s === "string" ? s : s.value || s.label || ""))
+              : [],
+            is_featured: !!p.is_featured,
+          }));
+          setProducts(normalized);
+        }
+      } catch (err) {
+        console.error("Failed to load products:", err);
+      }
+    }
+    loadProducts();
+  }, []);
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -96,7 +124,7 @@ export default function AdminProductsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {PRODUCTS.map((prod) => (
+        {products.map((prod) => (
           <div key={prod.id} className="bg-white rounded-xl border border-neutral-200 p-6 flex flex-col justify-between shadow-xs hover:shadow-md transition-shadow">
             <div>
               <div className="flex items-center justify-between mb-3">

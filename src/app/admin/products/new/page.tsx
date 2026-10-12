@@ -13,13 +13,44 @@ export default function AdminNewProductPage() {
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      const newProduct = {
+        id: slug,
+        name,
+        slug,
+        category,
+        tagline,
+        badge: "NEW",
+        description,
+        specs: description ? [description] : [],
+        is_featured: false,
+      };
+
+      // Fetch existing products to append
+      const existingRes = await fetch("/api/admin/content?section=products");
+      const existingJson = await existingRes.json();
+      const existingList = Array.isArray(existingJson.data) ? existingJson.data : [];
+      const updatedList = [...existingList, newProduct];
+
+      const res = await fetch("/api/admin/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "products", data: updatedList }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to save new product");
+      }
+
       router.push("/admin/products");
-    }, 800);
+    } catch (err: any) {
+      alert("Error adding product: " + (err.message || String(err)));
+      setSaving(false);
+    }
   }
 
   return (

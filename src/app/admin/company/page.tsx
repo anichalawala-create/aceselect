@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Building2, Save, CheckCircle2, RefreshCw } from "lucide-react";
 import { generateVideoThumbnail } from "@/lib/videoUtils";
 
@@ -10,7 +10,26 @@ export default function AdminCompanyPage() {
   const [videoUrl, setVideoUrl] = useState("/videos/company-bg.mp4");
   const [posterUrl, setPosterUrl] = useState("");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    async function loadCompany() {
+      try {
+        const res = await fetch("/api/admin/content?section=company");
+        const json = await res.json();
+        if (json.success && json.data) {
+          if (json.data.vision) setVision(json.data.vision);
+          if (json.data.mission) setMission(json.data.mission);
+          if (json.data.videoUrl) setVideoUrl(json.data.videoUrl);
+          if (json.data.posterUrl) setPosterUrl(json.data.posterUrl);
+        }
+      } catch (err) {
+        console.error("Failed to load company content:", err);
+      }
+    }
+    loadCompany();
+  }, []);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -61,10 +80,30 @@ export default function AdminCompanyPage() {
     }
   }
 
-  function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setSaving(true);
+    setSaved(false);
+    try {
+      const res = await fetch("/api/admin/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          section: "company",
+          data: { vision, mission, videoUrl, posterUrl },
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to save company details");
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: any) {
+      alert("Error saving company details: " + (err.message || String(err)));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -78,10 +117,11 @@ export default function AdminCompanyPage() {
         </div>
         <button
           onClick={handleSave}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#283A97] text-white text-sm font-semibold rounded-lg hover:bg-[#1e2d7a] transition-colors cursor-pointer shadow-xs"
+          disabled={saving}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#283A97] text-white text-sm font-semibold rounded-lg hover:bg-[#1e2d7a] transition-colors cursor-pointer shadow-xs disabled:opacity-60"
         >
           <Save className="w-4 h-4" />
-          {saved ? "Saved ✓" : "Save Overview"}
+          {saved ? "Saved ✓" : saving ? "Saving..." : "Save Overview"}
         </button>
       </div>
 

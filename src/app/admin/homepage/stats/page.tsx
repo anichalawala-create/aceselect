@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Save, Plus, Trash2, Pencil } from "lucide-react";
 
 const DEFAULT_STATS = [
@@ -12,13 +13,44 @@ const DEFAULT_STATS = [
 export default function AdminStatsPage() {
   const [stats, setStats] = useState(DEFAULT_STATS);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const res = await fetch("/api/admin/content?section=stats");
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setStats(json.data);
+        }
+      } catch (err) {
+        console.error("Failed to load stats:", err);
+      }
+    }
+    loadStats();
+  }, []);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setSaving(false);
-    alert("Homepage statistics updated successfully!");
+    setSaved(false);
+    try {
+      const res = await fetch("/api/admin/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "stats", data: stats }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to save statistics");
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: any) {
+      alert("Error saving statistics: " + (err.message || String(err)));
+    } finally {
+      setSaving(false);
+    }
   }
 
   function update(id: string, key: string, value: string | number | boolean) {
@@ -32,8 +64,8 @@ export default function AdminStatsPage() {
           <h1 className="text-2xl font-bold text-neutral-900">Homepage Stats</h1>
           <p className="text-sm text-neutral-500 mt-1">Edit the 4 stat counters shown below the hero section</p>
         </div>
-        <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#283A97] text-white text-sm font-semibold rounded-lg hover:bg-[#1e2d7a] transition-colors disabled:opacity-60">
-          <Save className="w-4 h-4" /> {saving ? "Saving..." : "Save Changes"}
+        <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#283A97] text-white text-sm font-semibold rounded-lg hover:bg-[#1e2d7a] transition-colors disabled:opacity-60 cursor-pointer">
+          <Save className="w-4 h-4" /> {saved ? "Changes Saved ✓" : saving ? "Saving..." : "Save Changes"}
         </button>
       </div>
 

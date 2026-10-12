@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Star, MessageSquareQuote, Plus, Trash2, CheckCircle2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Star, MessageSquareQuote, Plus, Trash2, CheckCircle2, Save } from "lucide-react";
 
 interface Testimonial {
   id: string;
@@ -41,15 +41,66 @@ const INITIAL_TESTIMONIALS: Testimonial[] = [
 
 export default function AdminTestimonialsPage() {
   const [items, setItems] = useState<Testimonial[]>(INITIAL_TESTIMONIALS);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  function toggleFeatured(id: string) {
-    setItems((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, is_featured: !t.is_featured } : t))
-    );
+  useEffect(() => {
+    async function loadTestimonials() {
+      try {
+        const res = await fetch("/api/admin/content?section=testimonials");
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setItems(json.data);
+        }
+      } catch (err) {
+        console.error("Failed to load testimonials:", err);
+      }
+    }
+    loadTestimonials();
+  }, []);
+
+  async function persistTestimonials(updated: Testimonial[]) {
+    try {
+      await fetch("/api/admin/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "testimonials", data: updated }),
+      });
+    } catch (err) {
+      console.error("Error saving testimonials:", err);
+    }
   }
 
-  function handleDelete(id: string) {
-    setItems((prev) => prev.filter((t) => t.id !== id));
+  async function toggleFeatured(id: string) {
+    const updated = items.map((t) => (t.id === id ? { ...t, is_featured: !t.is_featured } : t));
+    setItems(updated);
+    await persistTestimonials(updated);
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this testimonial?")) return;
+    const updated = items.filter((t) => t.id !== id);
+    setItems(updated);
+    try {
+      await fetch(`/api/admin/content?section=testimonials&id=${id}`, { method: "DELETE" });
+      await persistTestimonials(updated);
+    } catch (err) {
+      console.error("Error deleting testimonial:", err);
+    }
+  }
+
+  async function handleSaveAll() {
+    setSaving(true);
+    setSaved(false);
+    try {
+      await persistTestimonials(items);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: any) {
+      alert("Error saving testimonials: " + (err.message || String(err)));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -61,6 +112,13 @@ export default function AdminTestimonialsPage() {
             Executive feedback and endorsements featured on the ACE SELECT public portal
           </p>
         </div>
+        <button
+          onClick={handleSaveAll}
+          disabled={saving}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#283A97] text-white text-sm font-semibold rounded-lg hover:bg-[#1e2d7a] transition-colors cursor-pointer shadow-xs disabled:opacity-60"
+        >
+          <Save className="w-4 h-4" /> {saved ? "Changes Saved ✓" : saving ? "Saving..." : "Save Testimonials"}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

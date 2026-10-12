@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, Eye, Info, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { generateVideoThumbnail } from "@/lib/videoUtils";
@@ -26,6 +26,21 @@ export default function AdminHeroPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    async function loadHero() {
+      try {
+        const res = await fetch("/api/admin/content?section=hero");
+        const json = await res.json();
+        if (json.success && json.data) {
+          setForm((prev) => ({ ...prev, ...json.data }));
+        }
+      } catch (err) {
+        console.error("Failed to load hero content:", err);
+      }
+    }
+    loadHero();
+  }, []);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -85,9 +100,24 @@ export default function AdminHeroPage() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setSaving(false);
-    setSaved(true);
+    setSaved(false);
+    try {
+      const res = await fetch("/api/admin/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "hero", data: form }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to save changes");
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: any) {
+      alert("Error saving hero content: " + (err.message || String(err)));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

@@ -1,0 +1,237 @@
+{
+  "hero": {
+    "eyebrow_text": "INDIAN OEM & MANUFACTURER | ACTIVE LED & DIGITAL SIGNAGE",
+    "headline_line1": "ENGINEERED FOR INDIA.",
+    "headline_line2": "DESIGNED FOR EVERY APPLICATION.",
+    "subheadline": "ACE SELECT is an Indian OEM and Manufacturer of Active LED Video Wall and Digital Signage Display Systems, delivering professionally engineered, application-specific display solutions for government, banking, corporate, institutional, commercial, and mission-critical environments across India.",
+    "cta_primary_label": "EXPLORE OUR WORK",
+    "cta_primary_href": "/projects",
+    "cta_secondary_label": "GET A QUOTE",
+    "cta_secondary_href": "/contact",
+    "bottom_tagline": "PROFESSIONALLY ENGINEERED\nAPPLICATION-SPECIFIC DISPLAY SYSTEMS",
+    "vertical_labels": ["GOVERNMENT", "BANKING", "CORPORATE", "INSTITUTIONAL", "COMMERCIAL", "MISSION-CRITICAL"],
+    "background_video_url": "/videos/homepage-hero.mp4",
+    "poster_url": "",
+    "is_active": true
+  },
+  "about": {
+    "eyebrow": "ABOUT ACE SELECT",
+    "headline": "CREATIVE THINKING. DESIGNING BEYOND THE BOX.",
+    "body1": "ACE SELECT stands as India's premier Design-to-Build agency, bridging the gap between innovative branding concepts and robust commercial fabrication.",
+    "body2": "From high-density urban transit hubs to remote tier-3 banking branches, our active LED and architectural identity networks empower brands across 476+ cities nationwide."
+  },
+  "stats": [
+    { "id": "1", "icon_name": "Building2", "end_value": 476, "prefix": "", "suffix": "+", "label": "CITIES SERVED", "sort_order": 1, "is_active": true },
+    { "id": "2", "icon_name": "TrendingUp", "end_value": 100, "prefix": "₹", "suffix": " CR+", "label": "ANNUAL TURNOVER", "sort_order": 2, "is_active": true },
+    { "id": "3", "icon_name": "Monitor", "end_value": 34250, "prefix": "", "suffix": " m²+", "label": "ACTIVE LED INSTALLED", "sort_order": 3, "is_active": true },
+    { "id": "4", "icon_name": "Calendar", "end_value": 1996, "prefix": "", "suffix": "", "label": "SINCE YEAR", "sort_order": 4, "is_active": true }
+  ],
+  "process": [
+    { "number": "01", "title": "DISCOVER", "description": "Understand client brand, site geometry & visibility requirements" },
+    { "number": "02", "title": "DESIGN", "description": "Optical engineering, structural calculation & architectural 3D planning" },
+    { "number": "03", "title": "PRODUCE", "description": "Precision OEM manufacturing with ISO 9001:2015 quality control" },
+    { "number": "04", "title": "DEPLOY", "description": "Turnkey nationwide structural installation & calibration" },
+    { "number": "05", "title": "INSPECT", "description": "Multi-point luminescence, thermal & safety compliance auditing" },
+    { "number": "06", "title": "DELIVER", "description": "Jio Software CMS integration, remote telemetry & SLA support" }
+  ],
+  "pan_india": [
+    { "label": "States & Territories", "value": "27+" },
+    { "label": "Cities with Active Installations", "value": "476+" },
+    { "label": "Regional Representatives", "value": "176+" },
+    { "label": "Direct Service Hubs", "value": "14" }
+  ],
+  "company": {
+    "vision": "To engineer transformative visual experiences that elevate India's commercial and public landscapes.",
+    "mission": "Delivering turnkey Design-to-Build display systems and advertising infrastructure with unmatched precision, speed, and reliability.",
+    "videoUrl": "/videos/company-bg.mp4",
+    "posterUrl": ""
+  },
+  "settings": {
+    "site_name": "ACE SELECT",
+    "tagline": "Engineered for India. Designed for Every Application.",
+    "company_description": "ACE SELECT is an Indian OEM and Manufacturer of Active LED Video Wall and Digital Signage Display Systems, delivering professionally engineered, application-specific display solutions for government, banking, corporate, institutional, commercial, and mission-critical environments across India.",
+    "phone": "(+91) 22 25182233",
+    "email": "info@aceselect.in",
+    "address": "C 1601/02/03 Kailas Business Park, Vikhroli (West), Mumbai - 400079",
+    "whatsapp_number": "+912225182233",
+    "facebook_url": "https://www.facebook.com/AceSelect",
+    "twitter_url": "https://twitter.com/ace_select",
+    "instagram_url": "https://www.instagram.com/ace_select/",
+    "linkedin_url": "https://www.linkedin.com/company/aceselectsocial/",
+    "footer_description": "Trusted leader in Advertising, Branding, and Commercial Construction across 476+ cities in India. Design-to-Build excellence under one roof.",
+    "copyright_text": "© {year} ACE SELECT. All rights reserved. ISO 9001:2015 Certified.",
+    "maintenance_mode": false
+  },
+  "seo": [
+    {
+      "slug": "home",
+      "name": "Homepage",
+      "title": "ACE SELECT — Indian OEM LED Video Wall & Digital Signage Manufacturer",
+      "description": "ACE SELECT is an Indian OEM and Manufacturer of Active LED Video Wall and Digital Signage Display Systems. Serving government, banking, corporate, and mission-critical environments across India.",
+      "keywords": "Active LED video wall India, digital signage manufacturer, OEM display systems, LED screen manufacturer Mumbai"
+    },
+    {
+      "slug": "who-we-are",
+      "name": "Who We Are",
+      "title": "About ACE SELECT — Indian OEM LED & Display Systems Manufacturer",
+      "description": "Discover ACE SELECT's heritage of design-to-build excellence. 476+ cities, ₹100 Cr+ turnover, ISO 9001:2015 certified since 1996.",
+      "keywords": "About Ace Select, Kamal Gor, Indian LED manufacturer, design to build display systems"
+    },
+    {
+      "slug": "projects",
+      "name": "Projects Portfolio",
+      "title": "Projects — Landmark Active LED & Signage Installations Across India",
+      "description": "Explore ACE SELECT's portfolio of landmark LED video walls, digital signage, and signage solutions deployed across India.",
+      "keywords": "LED display projects India, DOOH installations Mumbai, Kashi Vishwanath LED network"
+    },
+    {
+      "slug": "contact",
+      "name": "Contact & Inquiries",
+      "title": "Contact ACE SELECT — Start a Conversation",
+      "description": "Reach out to ACE SELECT for innovative display, branding and retail solutions. Get a quote or discuss your project requirements.",
+      "keywords": "Contact Ace Select, Mumbai branding agency, LED video wall quote, Vikhroli office"
+    }
+  ],
+  "clients": [
+    { "id": "1", "name": "State Bank of India (SBI)", "tag": "Public Sector", "tint_color": "#283A97", "is_active": true },
+    { "id": "2", "name": "Bank of Baroda", "tag": "National Bank", "tint_color": "#EA580C", "is_active": true },
+    { "id": "3", "name": "ICICI Bank", "tag": "Private Banking", "tint_color": "#B91C1C", "is_active": true },
+    { "id": "4", "name": "Axis Bank", "tag": "Commercial Banking", "tint_color": "#9D174D", "is_active": true },
+    { "id": "5", "name": "HDFC Bank", "tag": "Financial Services", "tint_color": "#1E3A8A", "is_active": true },
+    { "id": "6", "name": "Indian Bank", "tag": "Public Sector", "tint_color": "#2563EB", "is_active": true },
+    { "id": "7", "name": "Muthoot Finance", "tag": "NBFC Group", "tint_color": "#DC2626", "is_active": true },
+    { "id": "8", "name": "Bank of Maharashtra", "tag": "State Banking", "tint_color": "#0284C7", "is_active": true },
+    { "id": "9", "name": "Cosmos Bank", "tag": "Co-op Banking", "tint_color": "#4F46E5", "is_active": true },
+    { "id": "10", "name": "City Union Bank", "tag": "Commercial", "tint_color": "#059669", "is_active": true },
+    { "id": "11", "name": "Punjab & Sindh Bank", "tag": "Public Sector", "tint_color": "#D97706", "is_active": true }
+  ],
+  "testimonials": [
+    {
+      "id": "1",
+      "quote": "ACE SELECT delivered exceptional turnkey ATM kiosk fabrication and signage deployment across hundreds of locations nationwide on schedule.",
+      "author_name": "Rohit Sharma",
+      "author_title": "Head - ATM Deployments & Infrastructure",
+      "author_company": "HITACHI PAYMENT SERVICES",
+      "is_featured": true
+    },
+    {
+      "id": "2",
+      "quote": "Their end-to-end support from optical design to retail installation made our flagship in-store LED display rollouts smooth and flawless.",
+      "author_name": "Neha Verma",
+      "author_title": "Marketing & Retail Projects Head",
+      "author_company": "TITAN COMPANY / CARATLANE",
+      "is_featured": true
+    },
+    {
+      "id": "3",
+      "quote": "Reliable, innovative and committed. ACE SELECT has been our trusted partner for nationwide banking branch branding and display systems.",
+      "author_name": "Amit Khanna",
+      "author_title": "Chief Manager - Infrastructure & Branding",
+      "author_company": "STATE BANK OF INDIA",
+      "is_featured": true
+    }
+  ],
+  "certifications": [
+    {
+      "name": "ISO 9001:2015 Quality Management Standard",
+      "issuer": "International Organization for Standardization",
+      "scope": "Design, Manufacture, Supply, Installation & Servicing of Active LED Displays, Digital Signage & Commercial Branding",
+      "status": "Active & Verified",
+      "validity": "Certified Since 1996"
+    },
+    {
+      "name": "OEM Electrical Safety & Ingress Protection (IP65)",
+      "issuer": "National Standards Laboratory Compliance",
+      "scope": "Outdoor Display Enclosures & Daylight-Visible All-Weather Thermal Dissipation Engineering",
+      "status": "Active & Verified",
+      "validity": "Certified Production"
+    },
+    {
+      "name": "CPWD / Government of India Vendor Empanelment",
+      "issuer": "Central Public Works Department",
+      "scope": "Public Infrastructure, Smart City Video Walls & Architectural Signage",
+      "status": "Empaneled",
+      "validity": "Class 1 Enterprise"
+    }
+  ],
+  "team": [
+    {
+      "id": "1",
+      "name": "Mr. Kamal Gor",
+      "role": "Founder & Managing Director",
+      "department": "Executive Leadership",
+      "bio": "Guiding ACE SELECT's vision of design-to-build excellence across 476+ cities with ₹100 Cr+ annual turnover.",
+      "is_active": true
+    },
+    {
+      "id": "2",
+      "name": "Projects & Engineering Head",
+      "role": "Vice President - Technology & Installations",
+      "department": "Display Engineering",
+      "bio": "Supervising 34,250+ sq. meters of active LED video walls and high-reliability smart city network infrastructure.",
+      "is_active": true
+    },
+    {
+      "id": "3",
+      "name": "National Operations Lead",
+      "role": "Director - Retail & Banking Rollouts",
+      "department": "Commercial Operations",
+      "bio": "Leading rapid-response installation teams across 27+ states and nationwide regional representative networks.",
+      "is_active": true
+    }
+  ],
+  "products": [
+    {
+      "id": "indoor-active-led",
+      "name": "Indoor Active LED Video Wall",
+      "category": "Active Indoor LED",
+      "tagline": "Fine Pixel Pitch COB & SMD Display Systems",
+      "badge": "P1.2 - P3.0",
+      "specs": [
+        "COB & SMD Fine Pixel Pitch (P1.2 to P3.0)",
+        "High refresh rate >3840Hz & 16-bit grayscale",
+        "160° ultra-wide horizontal & vertical viewing"
+      ],
+      "is_featured": true
+    },
+    {
+      "id": "outdoor-active-led",
+      "name": "Outdoor High-Brightness LED Display",
+      "category": "Outdoor LED Displays",
+      "tagline": "IP65 Weather-Resistant DOOH Advertising Facades",
+      "badge": ">6000 NITS",
+      "specs": [
+        ">6000 Nits high-brightness daylight readable",
+        "IP65 waterproof all-weather die-cast cabinet",
+        "ECO energy-saving low heat dissipation IC"
+      ],
+      "is_featured": true
+    },
+    {
+      "id": "digital-standees",
+      "name": "Commercial Digital Standee Displays",
+      "category": "Digital Standees",
+      "tagline": "Standalone Android 4K UHD Interactive Kiosks",
+      "badge": "4K UHD",
+      "specs": [
+        "32\" to 65\" commercial-grade 4K UHD panels",
+        "4mm tempered explosion-proof protective glass",
+        "Android OS / Windows plug & play media engine"
+      ],
+      "is_featured": true
+    },
+    {
+      "id": "signage-software",
+      "name": "Architectural Signage & Wayfinding Solutions",
+      "category": "Signage & Software",
+      "tagline": "Precision Stainless Steel, Pylons & Cloud CMS",
+      "badge": "SEAMLESS",
+      "specs": [
+        "Precision CNC & Laser Cut Stainless Steel 304/316",
+        "Centralized cloud CMS hosted on Jio Software",
+        "Mission-critical 24/7 control room & banking kiosk reliability"
+      ],
+      "is_featured": true
+    }
+  ]
+}

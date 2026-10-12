@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Users, Plus, Trash2, Mail, Phone, Building2 } from "lucide-react";
 
 interface TeamMember {
@@ -41,6 +41,21 @@ const INITIAL_TEAM: TeamMember[] = [
 
 export default function AdminTeamPage() {
   const [members, setMembers] = useState<TeamMember[]>(INITIAL_TEAM);
+
+  useEffect(() => {
+    async function loadTeam() {
+      try {
+        const res = await fetch("/api/admin/content?section=team");
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setMembers(json.data);
+        }
+      } catch (err) {
+        console.error("Failed to load team:", err);
+      }
+    }
+    loadTeam();
+  }, []);
 
   return (
     <div className="p-6 lg:p-8 space-y-6">

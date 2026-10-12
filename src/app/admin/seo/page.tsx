@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Globe, Save, Search, CheckCircle2 } from "lucide-react";
 
 interface SEOPage {
@@ -45,6 +45,22 @@ const PAGES_SEO: SEOPage[] = [
 export default function AdminSEOPage() {
   const [pages, setPages] = useState<SEOPage[]>(PAGES_SEO);
   const [savedIndex, setSavedIndex] = useState<number | null>(null);
+  const [savingIndex, setSavingIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    async function loadSEO() {
+      try {
+        const res = await fetch("/api/admin/content?section=seo");
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setPages(json.data);
+        }
+      } catch (err) {
+        console.error("Failed to load SEO data:", err);
+      }
+    }
+    loadSEO();
+  }, []);
 
   function updateField(idx: number, field: keyof SEOPage, value: string) {
     setPages((prev) =>
@@ -52,9 +68,26 @@ export default function AdminSEOPage() {
     );
   }
 
-  function handleSave(idx: number) {
-    setSavedIndex(idx);
-    setTimeout(() => setSavedIndex(null), 2000);
+  async function handleSave(idx: number) {
+    setSavingIndex(idx);
+    setSavedIndex(null);
+    try {
+      const res = await fetch("/api/admin/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "seo", data: pages[idx] }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to save SEO settings");
+      }
+      setSavedIndex(idx);
+      setTimeout(() => setSavedIndex(null), 3000);
+    } catch (err: any) {
+      alert("Error saving SEO: " + (err.message || String(err)));
+    } finally {
+      setSavingIndex(null);
+    }
   }
 
   return (
@@ -79,10 +112,11 @@ export default function AdminSEOPage() {
               </div>
               <button
                 onClick={() => handleSave(idx)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#283A97] text-white text-xs font-semibold rounded-md hover:bg-[#1e2d7a] transition-colors cursor-pointer"
+                disabled={savingIndex === idx}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#283A97] text-white text-xs font-semibold rounded-md hover:bg-[#1e2d7a] transition-colors cursor-pointer disabled:opacity-60"
               >
                 <Save className="w-3.5 h-3.5" />
-                {savedIndex === idx ? "Saved ✓" : "Save SEO"}
+                {savedIndex === idx ? "Saved ✓" : savingIndex === idx ? "Saving..." : "Save SEO"}
               </button>
             </div>
 

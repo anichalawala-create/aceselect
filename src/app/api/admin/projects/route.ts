@@ -47,8 +47,10 @@ export async function POST(req: Request) {
 
     const slug = body.slug || body.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
+    const isUuid = typeof body.id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.id);
+
     const newProject: Record<string, any> = {
-      ...(body.id ? { id: body.id } : {}),
+      ...(isUuid ? { id: body.id } : {}),
       slug,
       title: body.title,
       subtitle: body.subtitle || "",
@@ -73,7 +75,7 @@ export async function POST(req: Request) {
       sort_order: body.sort_order || 0,
     };
 
-    const conflictTarget = body.id ? "id" : "slug";
+    const conflictTarget = isUuid ? "id" : "slug";
     const { data, error } = await supabase
       .from("cms_projects")
       .upsert(newProject, { onConflict: conflictTarget })

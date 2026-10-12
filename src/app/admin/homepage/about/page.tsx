@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, Eye, CheckCircle2 } from "lucide-react";
 
 export default function AdminHomepageAboutPage() {
@@ -13,11 +13,50 @@ export default function AdminHomepageAboutPage() {
     "From high-density urban transit hubs to remote tier-3 banking branches, our active LED and architectural identity networks empower brands across 476+ cities nationwide."
   );
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  useEffect(() => {
+    async function loadAbout() {
+      try {
+        const res = await fetch("/api/admin/content?section=about");
+        const json = await res.json();
+        if (json.success && json.data) {
+          if (json.data.headline) setHeadline(json.data.headline);
+          if (json.data.eyebrow) setEyebrow(json.data.eyebrow);
+          if (json.data.body1) setBody1(json.data.body1);
+          if (json.data.body2) setBody2(json.data.body2);
+        }
+      } catch (err) {
+        console.error("Failed to load about section:", err);
+      }
+    }
+    loadAbout();
+  }, []);
+
+  async function handleSave(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    setSaving(true);
+    setSaved(false);
+    try {
+      const res = await fetch("/api/admin/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          section: "about",
+          data: { headline, eyebrow, body1, body2 },
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to save changes");
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: any) {
+      alert("Error saving about section: " + (err.message || String(err)));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

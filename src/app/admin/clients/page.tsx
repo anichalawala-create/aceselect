@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Star, Building2, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Star, Building2, CheckCircle2, Plus, Trash2, Save } from "lucide-react";
 
 interface Client {
   id: string;
@@ -30,32 +30,83 @@ export default function AdminClientsPage() {
   const [newName, setNewName] = useState("");
   const [newTag, setNewTag] = useState("Banking / Corporate");
   const [showAdd, setShowAdd] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  function handleAdd(e: React.FormEvent) {
+  useEffect(() => {
+    async function loadClients() {
+      try {
+        const res = await fetch("/api/admin/content?section=clients");
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setClients(json.data);
+        }
+      } catch (err) {
+        console.error("Failed to load clients:", err);
+      }
+    }
+    loadClients();
+  }, []);
+
+  async function persistClients(updatedList: Client[]) {
+    try {
+      await fetch("/api/admin/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ section: "clients", data: updatedList }),
+      });
+    } catch (err) {
+      console.error("Error saving clients:", err);
+    }
+  }
+
+  async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim()) return;
-    setClients((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        name: newName.trim(),
-        tag: newTag,
-        tint_color: "#283A97",
-        is_active: true,
-      },
-    ]);
+    const newClient: Client = {
+      id: Date.now().toString(),
+      name: newName.trim(),
+      tag: newTag,
+      tint_color: "#283A97",
+      is_active: true,
+    };
+    const updated = [...clients, newClient];
+    setClients(updated);
     setNewName("");
     setShowAdd(false);
+    await persistClients(updated);
   }
 
-  function toggleActive(id: string) {
-    setClients((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, is_active: !c.is_active } : c))
-    );
+  async function toggleActive(id: string) {
+    const updated = clients.map((c) => (c.id === id ? { ...c, is_active: !c.is_active } : c));
+    setClients(updated);
+    await persistClients(updated);
   }
 
-  function handleDelete(id: string) {
-    setClients((prev) => prev.filter((c) => c.id !== id));
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this partner?")) return;
+    const updated = clients.filter((c) => c.id !== id);
+    setClients(updated);
+    try {
+      await fetch(`/api/admin/content?section=clients&id=${id}`, { method: "DELETE" });
+      await persistClients(updated);
+    } catch (err) {
+      console.error("Error deleting client:", err);
+    }
+  }
+
+  async function handleSaveAll() {
+    setSaving(true);
+    setSaved(false);
+    try {
+      await persistClients(clients);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: any) {
+      alert("Error saving clients: " + (err.message || String(err)));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -67,12 +118,21 @@ export default function AdminClientsPage() {
             Manage partner logos and banking institutions showcased in the website client marquee
           </p>
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#283A97] text-white text-sm font-semibold rounded-lg hover:bg-[#1e2d7a] transition-colors cursor-pointer shadow-xs"
-        >
-          <Plus className="w-4 h-4" /> Add Partner
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSaveAll}
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer shadow-xs disabled:opacity-60"
+          >
+            <Save className="w-4 h-4" /> {saved ? "Changes Saved ✓" : saving ? "Saving..." : "Save All"}
+          </button>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#283A97] text-white text-sm font-semibold rounded-lg hover:bg-[#1e2d7a] transition-colors cursor-pointer shadow-xs"
+          >
+            <Plus className="w-4 h-4" /> Add Partner
+          </button>
+        </div>
       </div>
 
       {showAdd && (
