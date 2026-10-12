@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Mail, Phone, MapPin } from "lucide-react";
 
@@ -54,14 +57,49 @@ const footerLinks = {
   ],
 };
 
-const socials = [
-  { label: "Facebook", icon: <FacebookIcon />, href: "https://www.facebook.com/AceSelect" },
-  { label: "Twitter / X", icon: <TwitterIcon />, href: "https://twitter.com/ace_select" },
-  { label: "Instagram", icon: <InstagramIcon />, href: "https://www.instagram.com/ace_select/" },
-  { label: "LinkedIn", icon: <LinkedinIcon />, href: "https://www.linkedin.com/company/aceselectsocial/" },
-];
-
 export default function Footer() {
+  const [settings, setSettings] = useState({
+    phone: "(+91) 22 25182233",
+    email: "info@aceselect.in",
+    address: "C 1601/02/03 Kailas Business Park, Vikhroli (West), Mumbai - 400079",
+    footer_description: "Trusted leader in Advertising, Branding, and Commercial Construction across 476+ cities in India. Design-to-Build excellence under one roof.",
+    copyright_text: `© ${new Date().getFullYear()} ACE SELECT. All rights reserved. ISO 9001:2015 Certified.`,
+    facebook_url: "https://www.facebook.com/AceSelect",
+    twitter_url: "https://twitter.com/ace_select",
+    instagram_url: "https://www.instagram.com/ace_select/",
+    linkedin_url: "https://www.linkedin.com/company/aceselectsocial/",
+  });
+
+  useEffect(() => {
+    fetch("/api/admin/content?section=settings")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.success && res?.data) {
+          setSettings((prev) => ({
+            ...prev,
+            ...res.data,
+            phone: res.data.phone || prev.phone,
+            email: res.data.email || prev.email,
+            address: res.data.address || prev.address,
+            footer_description: res.data.footer_description || prev.footer_description,
+            copyright_text: res.data.copyright_text || prev.copyright_text,
+            facebook_url: res.data.facebook_url || prev.facebook_url,
+            twitter_url: res.data.twitter_url || prev.twitter_url,
+            instagram_url: res.data.instagram_url || prev.instagram_url,
+            linkedin_url: res.data.linkedin_url || prev.linkedin_url,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const socials = [
+    { label: "Facebook", icon: <FacebookIcon />, href: settings.facebook_url },
+    { label: "Twitter / X", icon: <TwitterIcon />, href: settings.twitter_url },
+    { label: "Instagram", icon: <InstagramIcon />, href: settings.instagram_url },
+    { label: "LinkedIn", icon: <LinkedinIcon />, href: settings.linkedin_url },
+  ];
+
   return (
     <footer className="bg-[#0B0F2B] text-white pt-24 pb-8" aria-label="Site footer">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -73,10 +111,10 @@ export default function Footer() {
               <img src="/logo.png" alt="Ace Select Logo" className="h-12 w-auto" />
             </Link>
             <p className="text-white/70 font-body text-base leading-relaxed mb-8 max-w-sm">
-              Trusted leader in Advertising, Branding, and Commercial Construction across 476+ cities in India. Design-to-Build excellence under one roof.
+              {settings.footer_description}
             </p>
             <div className="flex items-center gap-4">
-              {socials.map((s) => (
+              {socials.filter((s) => s.href).map((s) => (
                 <a
                   key={s.label}
                   href={s.href}
@@ -134,17 +172,17 @@ export default function Footer() {
           <div>
             <h4 className="font-display font-bold text-sm tracking-widest text-white mb-6 uppercase">Contact</h4>
             <div className="space-y-4">
-              <a href="tel:+912225182233" className="flex items-center gap-3 text-white/70 hover:text-white text-sm font-body transition-colors">
+              <a href={`tel:${settings.phone.replace(/[^+\d]/g, "")}`} className="flex items-center gap-3 text-white/70 hover:text-white text-sm font-body transition-colors">
                 <Phone className="w-4 h-4 text-solvorry-DEFAULT" />
-                (+91) 22 25182233
+                {settings.phone}
               </a>
-              <a href="mailto:info@aceselect.in" className="flex items-center gap-3 text-white/70 hover:text-white text-sm font-body transition-colors">
+              <a href={`mailto:${settings.email}`} className="flex items-center gap-3 text-white/70 hover:text-white text-sm font-body transition-colors">
                 <Mail className="w-4 h-4 text-solvorry-DEFAULT" />
-                info@aceselect.in
+                {settings.email}
               </a>
               <div className="flex items-start gap-3 text-white/70 text-sm font-body mt-4">
                 <MapPin className="w-4 h-4 text-solvorry-DEFAULT mt-1 flex-shrink-0" />
-                <span>C 1601/02/03 Kailas Business Park, Vikhroli (West), Mumbai - 400079</span>
+                <span>{settings.address}</span>
               </div>
             </div>
           </div>
@@ -153,7 +191,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-white/50 text-sm font-body text-center md:text-left">
-            &copy; {new Date().getFullYear()} ACE SELECT. All rights reserved. ISO 9001:2015 Certified.
+            {settings.copyright_text.replace("{year}", new Date().getFullYear().toString())}
           </p>
           <div className="flex gap-6 text-sm font-body">
             <Link href="/privacy-policy" className="text-white/50 hover:text-white transition-colors">Privacy Policy</Link>

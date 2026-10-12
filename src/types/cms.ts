@@ -76,6 +76,8 @@ export interface HeroContent {
   cta_secondary_href: string;
   bottom_tagline: string;
   vertical_labels: string[]; // GOVERNMENT, BANKING, etc.
+  background_video_url?: string;
+  poster_url?: string;
   is_active: boolean;
   updated_at: string;
 }
@@ -97,6 +99,8 @@ export interface HomeAboutSection {
   headline: string;
   body_paragraph1: string;
   body_paragraph2: string;
+  body1?: string;
+  body2?: string;
   badge_text?: string;
   badge_sub_text?: string;
   cta_label: string;
@@ -140,6 +144,8 @@ export interface CompanyPage {
   founder_photo_url?: string;
   vision: string;
   mission: string;
+  videoUrl?: string;
+  posterUrl?: string;
   values: { title: string; description: string }[];
   heritage_year: number;
   updated_at: string;

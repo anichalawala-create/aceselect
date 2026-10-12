@@ -8,7 +8,9 @@
  * This allows the public site to work NOW and migrate seamlessly.
  */
 
-import { isSupabaseConfigured, createSupabaseServerClient } from "@/lib/supabase";
+import fs from "fs";
+import path from "path";
+import { isSupabaseConfigured, createSupabaseServerClient, createSupabaseAdminClient } from "@/lib/supabase";
 import type {
   HeroContent,
   HomeStat,
@@ -25,21 +27,49 @@ import type {
   PageSEO,
   TeamMemberCMS,
   CMSEnquiry,
+  CompanyPage,
 } from "@/types/cms";
+
+// ================================================================
+// Helper: Read local CMS cache JSON file (written by Admin panel)
+// ================================================================
+function readCacheSection<T>(section: string, fallback: T): T {
+  try {
+    const cachePath = path.resolve(process.cwd(), "src/data/cms-content-cache.json");
+    if (fs.existsSync(cachePath)) {
+      const raw = fs.readFileSync(cachePath, "utf-8");
+      const data = JSON.parse(raw);
+      if (data && data[section] !== undefined && data[section] !== null) {
+        return data[section] as T;
+      }
+    }
+  } catch (err) {
+    console.warn(`[CMS] Error reading cache for ${section}:`, err);
+  }
+  return fallback;
+}
 
 // ================================================================
 // Helper: fetch from Supabase OR return null (triggers fallback)
 // ================================================================
 async function fetchFromDB<T>(
   tableName: string,
-  query: (supabase: ReturnType<typeof createSupabaseServerClient>) => Promise<{ data: T | null; error: unknown }>
+  query: (supabase: any) => Promise<{ data: T | null; error: unknown }>
 ): Promise<T | null> {
   if (!isSupabaseConfigured()) return null;
   
   try {
-    const supabase = createSupabaseServerClient();
+    let supabase;
+    try {
+      supabase = createSupabaseAdminClient();
+    } catch {
+      supabase = createSupabaseServerClient();
+    }
     const { data, error } = await query(supabase);
-    if (error) {
+    if (error || !data) {
+      return null;
+    }
+    if (Array.isArray(data) && data.length === 0) {
       return null;
     }
     return data;
@@ -72,18 +102,35 @@ const FALLBACK_SETTINGS: SiteSettings = {
 
 export async function getSiteSettings(): Promise<SiteSettings> {
   const data = await fetchFromDB<SiteSettings>("site_settings", async (supabase) =>
-    supabase.from("site_settings").select("*").single()
+    supabase.from("site_settings").select("*").limit(1).maybeSingle()
   );
-  return data || FALLBACK_SETTINGS;
+  if (data) {
+    return { ...FALLBACK_SETTINGS, ...data };
+  }
+  return readCacheSection<SiteSettings>("settings", FALLBACK_SETTINGS);
 }
 
 // ================================================================
 // SEO
 // ================================================================
 export async function getPageSEO(slug: string): Promise<PageSEO | null> {
-  return fetchFromDB<PageSEO>("page_seo", async (supabase) =>
-    supabase.from("page_seo").select("*").eq("page_slug", slug).single()
+  const data = await fetchFromDB<PageSEO>("page_seo", async (supabase) =>
+    supabase.from("page_seo").select("*").eq("page_slug", slug).maybeSingle()
   );
+  if (data) return data;
+  const seoCache = readCacheSection<any[]>("seo", []);
+  const matched = seoCache.find((s) => s.slug === slug);
+  if (matched) {
+    return {
+      id: matched.id || slug,
+      page_slug: matched.slug,
+      title: matched.title,
+      meta_description: matched.description || "",
+      keywords: matched.keywords || "",
+      updated_at: new Date().toISOString(),
+    };
+  }
+  return null;
 }
 
 // ================================================================
@@ -101,15 +148,68 @@ const FALLBACK_HERO: HeroContent = {
   cta_secondary_href: "/contact",
   bottom_tagline: "PROFESSIONALLY ENGINEERED\nAPPLICATION-SPECIFIC DISPLAY SYSTEMS",
   vertical_labels: ["GOVERNMENT", "BANKING", "CORPORATE", "INSTITUTIONAL", "COMMERCIAL", "MISSION-CRITICAL"],
+  background_video_url: "/videos/homepage-hero.mp4",
+  poster_url: "",
   is_active: true,
   updated_at: new Date().toISOString(),
 };
 
 export async function getHeroContent(): Promise<HeroContent> {
+  const cacheHero = readCacheSection<HeroContent>("hero", FALLBACK_HERO);
   const data = await fetchFromDB<HeroContent>("hero_content", async (supabase) =>
-    supabase.from("hero_content").select("*").eq("is_active", true).single()
+    supabase.from("hero_content").select("*").eq("is_active", true).limit(1).maybeSingle()
   );
-  return data || FALLBACK_HERO;
+  if (data) {
+    return {
+      ...FALLBACK_HERO,
+      ...cacheHero,
+      ...data,
+      background_video_url: (data as any).background_video_url || cacheHero.background_video_url || "/videos/homepage-hero.mp4",
+      poster_url: (data as any).poster_url || cacheHero.poster_url || "",
+    };
+  }
+  return { ...FALLBACK_HERO, ...cacheHero };
+}
+
+// ================================================================
+// HOME ABOUT SECTION
+// ================================================================
+const FALLBACK_ABOUT: HomeAboutSection = {
+  id: "static",
+  eyebrow: "ABOUT ACE SELECT",
+  headline: "CREATIVE THINKING.\nDESIGNING BEYOND THE BOX.",
+  body_paragraph1: "At ACE SELECT, creative thinking is the driving force of our designing process. We approach each project with a “beyond the box” mindset, balancing innovation with environmental responsibility—a philosophy deeply embedded in our heritage.",
+  body_paragraph2: "With a presence in over 476+ cities across India and an average annual turnover of ₹100 Crore+, ACE SELECT is a trusted leader in Advertising, Branding, and Commercial Construction. Guided by the visionary leadership of our Founder, Mr. Kamal Gor, our Design-to-Build approach delivers inventive, elegant, and multi-functional spaces under one roof.",
+  badge_text: "Secure Cloud CMS on JIO SOFTWARE",
+  badge_sub_text: "Centralized Oversight & Access Controls",
+  cta_label: "DISCOVER OUR STORY",
+  cta_href: "/who-we-are",
+  image_url: "/images/products/standee-banner.jpg",
+  image_alt: "ACE SELECT Android Digital Signage Standee",
+  updated_at: new Date().toISOString(),
+};
+
+export async function getHomeAbout(): Promise<HomeAboutSection> {
+  const cacheAbout = readCacheSection<any>("about", FALLBACK_ABOUT);
+  const data = await fetchFromDB<any>("home_about", async (supabase) =>
+    supabase.from("home_about").select("*").limit(1).maybeSingle()
+  );
+  const raw = data || cacheAbout || FALLBACK_ABOUT;
+  return {
+    ...FALLBACK_ABOUT,
+    ...cacheAbout,
+    ...raw,
+    eyebrow: raw.eyebrow || cacheAbout?.eyebrow || FALLBACK_ABOUT.eyebrow,
+    headline: raw.headline || cacheAbout?.headline || FALLBACK_ABOUT.headline,
+    body_paragraph1: (raw.body_paragraph1 && raw.body_paragraph1.trim()) || raw.body1 || cacheAbout?.body1 || FALLBACK_ABOUT.body_paragraph1,
+    body_paragraph2: (raw.body_paragraph2 && raw.body_paragraph2.trim()) || raw.body2 || cacheAbout?.body2 || FALLBACK_ABOUT.body_paragraph2,
+    badge_text: raw.badge_text || cacheAbout?.badge_text || FALLBACK_ABOUT.badge_text,
+    badge_sub_text: raw.badge_sub_text || cacheAbout?.badge_sub_text || FALLBACK_ABOUT.badge_sub_text,
+    cta_label: raw.cta_label || cacheAbout?.cta_label || FALLBACK_ABOUT.cta_label,
+    cta_href: raw.cta_href || cacheAbout?.cta_href || FALLBACK_ABOUT.cta_href,
+    image_url: raw.image_url || cacheAbout?.image_url || FALLBACK_ABOUT.image_url,
+    image_alt: raw.image_alt || cacheAbout?.image_alt || FALLBACK_ABOUT.image_alt,
+  };
 }
 
 // ================================================================
@@ -126,7 +226,8 @@ export async function getHomeStats(): Promise<HomeStat[]> {
   const data = await fetchFromDB<HomeStat[]>("home_stats", async (supabase) =>
     supabase.from("home_stats").select("*").eq("is_active", true).order("sort_order")
   );
-  return data || FALLBACK_STATS;
+  if (data && data.length > 0) return data;
+  return readCacheSection<HomeStat[]>("stats", FALLBACK_STATS);
 }
 
 // ================================================================
@@ -145,7 +246,8 @@ export async function getProcessSteps(): Promise<HomeProcessStep[]> {
   const data = await fetchFromDB<HomeProcessStep[]>("home_process_steps", async (supabase) =>
     supabase.from("home_process_steps").select("*").eq("is_active", true).order("sort_order")
   );
-  return data || FALLBACK_STEPS;
+  if (data && data.length > 0) return data;
+  return readCacheSection<HomeProcessStep[]>("process", FALLBACK_STEPS);
 }
 
 // ================================================================
@@ -161,7 +263,15 @@ export async function getPanIndiaStats(): Promise<PanIndiaStat[]> {
   const data = await fetchFromDB<PanIndiaStat[]>("pan_india_stats", async (supabase) =>
     supabase.from("pan_india_stats").select("*").eq("is_active", true).order("sort_order")
   );
-  return data || FALLBACK_PAN_INDIA;
+  if (data && data.length > 0) return data;
+  const fromCache = readCacheSection<any[]>("pan_india", FALLBACK_PAN_INDIA);
+  return fromCache.map((item, idx) => ({
+    id: item.id || String(idx + 1),
+    value: item.value,
+    label: item.label,
+    sort_order: item.sort_order ?? idx + 1,
+    is_active: item.is_active !== false,
+  }));
 }
 
 // ================================================================
@@ -264,7 +374,8 @@ export async function getClients(): Promise<CMSClient[]> {
   const data = await fetchFromDB<CMSClient[]>("cms_clients", async (supabase) =>
     supabase.from("cms_clients").select("*").eq("is_active", true).order("sort_order")
   );
-  return data || FALLBACK_CLIENTS;
+  if (data && data.length > 0) return data;
+  return readCacheSection<CMSClient[]>("clients", FALLBACK_CLIENTS);
 }
 
 // ================================================================
@@ -309,8 +420,59 @@ export async function getTestimonials(featuredOnly = false): Promise<CMSTestimon
     if (featuredOnly) q = q.eq("is_featured", true);
     return q;
   });
-  const result = data || FALLBACK_TESTIMONIALS;
-  return featuredOnly ? result.filter((t) => t.is_featured) : result;
+  const list = (data && data.length > 0) ? data : readCacheSection<CMSTestimonial[]>("testimonials", FALLBACK_TESTIMONIALS);
+  return featuredOnly ? list.filter((t) => t.is_featured) : list;
+}
+
+// ================================================================
+// COMPANY / WHO WE ARE PAGE
+// ================================================================
+const FALLBACK_COMPANY: CompanyPage = {
+  id: "static",
+  hero_headline: "CREATIVE THINKING.",
+  hero_highlight: "BEYOND THE BOX.",
+  hero_subheadline: "At ACE SELECT, creative thinking is the driving force of our designing process. We approach each project with a “beyond the box” mindset, balancing innovation with environmental responsibility—a philosophy deeply embedded in our heritage.",
+  who_we_are_headline: "INVENTIVE SPACES.",
+  who_we_are_highlight: "DESIGN-TO-BUILD EXCELLENCE.",
+  who_we_are_body: "By working closely with clients from concept to completion, we’ve built a reputation for delivering inventive, elegant, and multi-functional spaces. With a presence in over 476+ cities across India, ACE SELECT is a trusted leader in Advertising, Branding, and Commercial Construction.",
+  founder_name: "Mr. Kamal Gor",
+  founder_title: "Founder & Managing Director, ACE SELECT",
+  founder_quote: "Quality and trust are built through consistency, relentless innovation, and keeping our word on every single project.",
+  founder_bio: "With decades of experience driving design-to-build innovation, Mr. Kamal Gor has guided ACE SELECT to nationwide leadership.",
+  vision: "To engineer transformative visual experiences that elevate India's commercial and public landscapes.",
+  mission: "Delivering turnkey Design-to-Build display systems and advertising infrastructure with unmatched precision, speed, and reliability.",
+  videoUrl: "/company-hero.mp4",
+  posterUrl: "",
+  values: [],
+  heritage_year: 1996,
+  updated_at: new Date().toISOString(),
+};
+
+export async function getCompanyPage(): Promise<CompanyPage> {
+  const cacheCompany = readCacheSection<any>("company", FALLBACK_COMPANY);
+  const data = await fetchFromDB<any>("company_page", async (supabase) =>
+    supabase.from("company_page").select("*").limit(1).maybeSingle()
+  );
+  const raw = data || cacheCompany || FALLBACK_COMPANY;
+  return {
+    ...FALLBACK_COMPANY,
+    ...cacheCompany,
+    ...raw,
+    hero_headline: raw.hero_headline || cacheCompany?.hero_headline || FALLBACK_COMPANY.hero_headline,
+    hero_highlight: raw.hero_highlight || cacheCompany?.hero_highlight || FALLBACK_COMPANY.hero_highlight,
+    hero_subheadline: (raw.hero_subheadline && raw.hero_subheadline.trim()) || cacheCompany?.hero_subheadline || FALLBACK_COMPANY.hero_subheadline,
+    who_we_are_headline: raw.who_we_are_headline || cacheCompany?.who_we_are_headline || FALLBACK_COMPANY.who_we_are_headline,
+    who_we_are_highlight: raw.who_we_are_highlight || cacheCompany?.who_we_are_highlight || FALLBACK_COMPANY.who_we_are_highlight,
+    who_we_are_body: (raw.who_we_are_body && raw.who_we_are_body.trim()) || cacheCompany?.who_we_are_body || FALLBACK_COMPANY.who_we_are_body,
+    founder_name: raw.founder_name || cacheCompany?.founder_name || FALLBACK_COMPANY.founder_name,
+    founder_title: raw.founder_title || cacheCompany?.founder_title || FALLBACK_COMPANY.founder_title,
+    founder_quote: (raw.founder_quote && raw.founder_quote.trim()) || cacheCompany?.founder_quote || FALLBACK_COMPANY.founder_quote,
+    founder_bio: (raw.founder_bio && raw.founder_bio.trim()) || cacheCompany?.founder_bio || FALLBACK_COMPANY.founder_bio,
+    vision: (raw.vision && raw.vision.trim()) || cacheCompany?.vision || FALLBACK_COMPANY.vision,
+    mission: (raw.mission && raw.mission.trim()) || cacheCompany?.mission || FALLBACK_COMPANY.mission,
+    videoUrl: raw.videoUrl || cacheCompany?.videoUrl || "/company-hero.mp4",
+    posterUrl: raw.posterUrl || cacheCompany?.posterUrl || "",
+  };
 }
 
 // ================================================================
@@ -320,7 +482,8 @@ export async function getCertifications(): Promise<CMSCertification[]> {
   const data = await fetchFromDB<CMSCertification[]>("cms_certifications", async (supabase) =>
     supabase.from("cms_certifications").select("*").eq("is_active", true).order("sort_order")
   );
-  return data || [];
+  if (data && data.length > 0) return data;
+  return readCacheSection<CMSCertification[]>("certifications", []);
 }
 
 // ================================================================
@@ -330,7 +493,8 @@ export async function getTeamMembers(): Promise<TeamMemberCMS[]> {
   const data = await fetchFromDB<TeamMemberCMS[]>("team_members", async (supabase) =>
     supabase.from("team_members").select("*").eq("is_active", true).order("sort_order")
   );
-  return data || [];
+  if (data && data.length > 0) return data;
+  return readCacheSection<TeamMemberCMS[]>("team", []);
 }
 
 // ================================================================

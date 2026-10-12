@@ -4,22 +4,56 @@ import Link from "next/link";
 import { ArrowRight, Monitor, Building2, Network, Calendar, MapPin, Landmark, TrendingUp } from "lucide-react";
 import { Counter } from "@/components/StatCounter";
 import HeroVideo from "@/components/HeroVideo";
+import {
+  getHeroContent,
+  getHomeStats,
+  getHomeAbout,
+  getProcessSteps,
+  getPanIndiaStats,
+  getClients,
+  getTestimonials,
+} from "@/lib/cms-service";
 
-const FINANCIAL_CLIENTS = [
-  { name: "SBI", tag: "Public Sector", tint: "#283A97" },
-  { name: "Bank of Baroda", tag: "National Bank", tint: "#EA580C" },
-  { name: "ICICI Bank", tag: "Private Banking", tint: "#B91C1C" },
-  { name: "Axis Bank", tag: "Commercial Banking", tint: "#9D174D" },
-  { name: "HDFC Bank", tag: "Financial Services", tint: "#1E3A8A" },
-  { name: "Indian Bank", tag: "Public Sector", tint: "#2563EB" },
-  { name: "Muthoot Finance", tag: "NBFC Group", tint: "#DC2626" },
-  { name: "Bank of Maharashtra", tag: "State Banking", tint: "#0284C7" },
-  { name: "Cosmos Bank", tag: "Co-op Banking", tint: "#4F46E5" },
-  { name: "City Union Bank", tag: "Commercial", tint: "#059669" },
-  { name: "Punjab & Sindh Bank", tag: "Public Sector", tint: "#D97706" },
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const STAT_ICONS: Record<string, React.ReactNode> = {
+  Building2: <Building2 className="w-8 h-8 text-neutral-400" />,
+  TrendingUp: <TrendingUp className="w-8 h-8 text-neutral-400" />,
+  Monitor: <Monitor className="w-8 h-8 text-neutral-400" />,
+  Calendar: <Calendar className="w-8 h-8 text-neutral-400" />,
+  MapPin: <MapPin className="w-8 h-8 text-neutral-400" />,
+  Landmark: <Landmark className="w-8 h-8 text-neutral-400" />,
+  Network: <Network className="w-8 h-8 text-neutral-400" />,
+};
+
+const DEFAULT_CLIENTS = [
+  { name: "SBI", tag: "Public Sector", tint_color: "#283A97" },
+  { name: "Bank of Baroda", tag: "National Bank", tint_color: "#EA580C" },
+  { name: "ICICI Bank", tag: "Private Banking", tint_color: "#B91C1C" },
+  { name: "Axis Bank", tag: "Commercial Banking", tint_color: "#9D174D" },
+  { name: "HDFC Bank", tag: "Financial Services", tint_color: "#1E3A8A" },
+  { name: "Indian Bank", tag: "Public Sector", tint_color: "#2563EB" },
+  { name: "Muthoot Finance", tag: "NBFC Group", tint_color: "#DC2626" },
+  { name: "Bank of Maharashtra", tag: "State Banking", tint_color: "#0284C7" },
+  { name: "Cosmos Bank", tag: "Co-op Banking", tint_color: "#4F46E5" },
+  { name: "City Union Bank", tag: "Commercial", tint_color: "#059669" },
+  { name: "Punjab & Sindh Bank", tag: "Public Sector", tint_color: "#D97706" },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [hero, stats, about, processSteps, panIndia, clients, testimonials] = await Promise.all([
+    getHeroContent(),
+    getHomeStats(),
+    getHomeAbout(),
+    getProcessSteps(),
+    getPanIndiaStats(),
+    getClients(),
+    getTestimonials(),
+  ]);
+
+  const clientList = clients && clients.length > 0 ? clients : DEFAULT_CLIENTS;
+
   return (
     <div className="bg-white w-full max-w-full overflow-x-hidden">
       
@@ -27,7 +61,7 @@ export default function HomePage() {
       <section className="relative min-h-[90vh] text-white flex flex-col justify-center pt-24 pb-12 overflow-hidden z-0" aria-label="Hero section">
         {/* Full-screen background video with instant frame poster */}
         <div className="absolute inset-0 z-0">
-          <HeroVideo />
+          <HeroVideo videoSrc={hero.background_video_url || "/videos/homepage-hero.mp4"} poster={hero.poster_url || ""} />
         </div>
 
         <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12 mt-10 flex-grow">
@@ -37,39 +71,38 @@ export default function HomePage() {
             <div className="absolute -left-4 sm:-left-6 lg:-left-8 top-8 bottom-8 w-1 bg-solvorry-light shadow-[0_0_15px_rgba(74,96,212,0.5)]" />
             
             <p className="text-white/90 tracking-[0.12em] sm:tracking-[0.2em] text-[11px] sm:text-xs font-semibold mb-6 drop-shadow-md uppercase">
-              INDIAN OEM &amp; MANUFACTURER <span className="mx-2">|</span> ACTIVE LED &amp; DIGITAL SIGNAGE
+              {hero.eyebrow_text || "INDIAN OEM & MANUFACTURER | ACTIVE LED & DIGITAL SIGNAGE"}
             </p>
             
             <h1 className="font-display font-black text-4xl sm:text-5xl md:text-6xl lg:text-[4.6rem] leading-[1.08] mb-6 tracking-tight drop-shadow-2xl uppercase">
-              ENGINEERED FOR INDIA. <br/>
-              <span className="text-solvorry-light">DESIGNED FOR EVERY APPLICATION.</span>
+              {hero.headline_line1} <br/>
+              <span className="text-solvorry-light">{hero.headline_line2}</span>
             </h1>
             
             <p className="text-white/95 text-base sm:text-lg md:text-xl max-w-2xl mb-12 font-medium leading-relaxed drop-shadow-lg">
-              ACE SELECT is an Indian OEM and Manufacturer of Active LED Video Wall and Digital Signage Display Systems, delivering professionally engineered, application-specific display solutions for government, banking, corporate, institutional, commercial, and mission-critical environments across India.
+              {hero.subheadline}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mb-20">
               <Link
-                href="/projects"
+                href={hero.cta_primary_href || "/projects"}
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-solvorry-DEFAULT text-white font-display font-semibold transition-all hover:bg-solvorry-dark text-sm border border-transparent"
               >
-                EXPLORE OUR WORK
+                {hero.cta_primary_label || "EXPLORE OUR WORK"}
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
-                href="/contact"
+                href={hero.cta_secondary_href || "/contact"}
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-white text-white font-display font-semibold transition-all hover:bg-white hover:text-[#0B0F2B] text-sm backdrop-blur-sm bg-black/20"
               >
-                GET A QUOTE
+                {hero.cta_secondary_label || "GET A QUOTE"}
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
             
             <div className="mt-auto">
-              <p className="text-[10px] tracking-widest text-white/90 uppercase leading-relaxed font-semibold drop-shadow-md">
-                PROFESSIONALLY ENGINEERED <br/>
-                APPLICATION-SPECIFIC DISPLAY SYSTEMS
+              <p className="text-[10px] tracking-widest text-white/90 uppercase leading-relaxed font-semibold drop-shadow-md whitespace-pre-line">
+                {hero.bottom_tagline || "PROFESSIONALLY ENGINEERED\nAPPLICATION-SPECIFIC DISPLAY SYSTEMS"}
               </p>
             </div>
           </div>
@@ -79,12 +112,9 @@ export default function HomePage() {
             {/* Right Side Vertical Text */}
             <div className="hidden xl:flex flex-col items-end justify-center absolute right-8 top-1/2 -translate-y-1/2">
                <div className="flex flex-col gap-5 text-[10px] tracking-[0.3em] font-semibold text-white/90 uppercase leading-none text-right drop-shadow-lg">
-                  <p>GOVERNMENT</p>
-                  <p>BANKING</p>
-                  <p>CORPORATE</p>
-                  <p>INSTITUTIONAL</p>
-                  <p>COMMERCIAL</p>
-                  <p>MISSION-CRITICAL</p>
+                  {(hero.vertical_labels && hero.vertical_labels.length > 0 ? hero.vertical_labels : ["GOVERNMENT", "BANKING", "CORPORATE", "INSTITUTIONAL", "COMMERCIAL", "MISSION-CRITICAL"]).map((lbl) => (
+                    <p key={lbl}>{lbl}</p>
+                  ))}
                </div>
             </div>
           </div>
@@ -103,18 +133,13 @@ export default function HomePage() {
       <section className="bg-white border-b border-neutral-100 relative z-20 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-neutral-200">
-            {[
-              { icon: <Building2 className="w-8 h-8 text-neutral-400" />, end: 476, suffix: "+", label: "CITIES SERVED" },
-              { icon: <TrendingUp className="w-8 h-8 text-neutral-400" />, end: 100, prefix: "₹", suffix: " CR+", label: "ANNUAL TURNOVER" },
-              { icon: <Monitor className="w-8 h-8 text-neutral-400" />, end: 34250, suffix: " m²+", label: "ACTIVE LED INSTALLED" },
-              { icon: <Calendar className="w-8 h-8 text-neutral-400" />, end: 1996, suffix: "", label: "SINCE YEAR" },
-            ].map((stat) => (
-              <div key={stat.label} className="py-12 md:py-16 flex flex-col items-center justify-center text-center group hover:bg-neutral-50 transition-colors">
+            {stats.map((stat) => (
+              <div key={stat.id || stat.label} className="py-12 md:py-16 flex flex-col items-center justify-center text-center group hover:bg-neutral-50 transition-colors">
                 <div className="mb-6 opacity-70 group-hover:opacity-100 transition-opacity">
-                  {stat.icon}
+                  {STAT_ICONS[stat.icon_name] || <Building2 className="w-8 h-8 text-neutral-400" />}
                 </div>
                 <div className="font-display font-bold text-5xl md:text-6xl text-solvorry-DEFAULT mb-3 tabular-nums">
-                  <Counter end={stat.end} prefix={stat.prefix} suffix={stat.suffix} />
+                  <Counter end={stat.end_value} prefix={stat.prefix || ""} suffix={stat.suffix || ""} />
                 </div>
                 <div className="text-neutral-500 font-display font-semibold tracking-wider text-sm">
                   {stat.label}
@@ -132,28 +157,31 @@ export default function HomePage() {
             <SectionReveal direction="left">
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-8 h-[2px] bg-solvorry-DEFAULT" />
-                <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">ABOUT ACE SELECT</span>
+                <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">
+                  {about.eyebrow || "ABOUT ACE SELECT"}
+                </span>
               </div>
-              <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 mb-8 tracking-tight leading-[1.1]">
-                CREATIVE THINKING.<br/>
-                DESIGNING BEYOND THE BOX.
+              <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 mb-8 tracking-tight leading-[1.1] whitespace-pre-line">
+                {about.headline || "CREATIVE THINKING.\nDESIGNING BEYOND THE BOX."}
               </h2>
               <p className="text-neutral-600 font-body text-lg leading-relaxed mb-6 max-w-xl">
-                At ACE SELECT, creative thinking is the driving force of our designing process. We approach each project with a “beyond the box” mindset, balancing innovation with environmental responsibility—a philosophy deeply embedded in our heritage.
+                {about.body_paragraph1 || about.body1}
               </p>
               <p className="text-neutral-600 font-body text-base leading-relaxed mb-8 max-w-xl">
-                With a presence in over 476+ cities across India and an average annual turnover of ₹100 Crore+, ACE SELECT is a trusted leader in Advertising, Branding, and Commercial Construction. Guided by the visionary leadership of our Founder, Mr. Kamal Gor, our Design-to-Build approach delivers inventive, elegant, and multi-functional spaces under one roof.
+                {about.body_paragraph2 || about.body2}
               </p>
               <div className="flex flex-wrap items-center gap-4 mb-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-solvorry-DEFAULT/10 border border-solvorry-DEFAULT/20 text-solvorry-DEFAULT text-xs font-semibold">
                   <span className="w-2 h-2 rounded-full bg-solvorry-DEFAULT animate-pulse" />
-                  Secure Cloud CMS on JIO SOFTWARE
+                  {about.badge_text || "Secure Cloud CMS on JIO SOFTWARE"}
                 </div>
-                <span className="text-xs text-neutral-400 font-medium font-body">Centralized Oversight & Access Controls</span>
+                <span className="text-xs text-neutral-400 font-medium font-body">
+                  {about.badge_sub_text || "Centralized Oversight & Access Controls"}
+                </span>
               </div>
               <div>
-                <Link href="/who-we-are" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-solvorry-DEFAULT text-white font-display font-semibold transition-all hover:bg-solvorry-dark text-sm group">
-                  DISCOVER OUR STORY
+                <Link href={about.cta_href || "/who-we-are"} className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-solvorry-DEFAULT text-white font-display font-semibold transition-all hover:bg-solvorry-dark text-sm group">
+                  {about.cta_label || "DISCOVER OUR STORY"}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
@@ -162,8 +190,8 @@ export default function HomePage() {
             <SectionReveal direction="right" delay={150}>
               <div className="relative w-full aspect-[16/10] overflow-hidden rounded-md">
                 <img 
-                  src="/images/products/standee-banner.jpg" 
-                  alt="ACE SELECT Android Digital Signage Standee" 
+                  src={about.image_url || "/images/products/standee-banner.jpg"} 
+                  alt={about.image_alt || "ACE SELECT Android Digital Signage Standee"} 
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -261,12 +289,8 @@ export default function HomePage() {
               </SectionReveal>
 
               <SectionReveal delay={200} className="w-full md:w-1/3 flex flex-col gap-10">
-                {[
-                  { value: "27+", label: "STATES" },
-                  { value: "476+", label: "CITIES" },
-                  { value: "176+", label: "REGIONAL REPRESENTATIVES" }
-                ].map((stat, i) => (
-                  <div key={i} className="flex flex-col items-start gap-2">
+                {panIndia.map((stat, i) => (
+                  <div key={stat.id || stat.label || i} className="flex flex-col items-start gap-2">
                     <div className="w-10 h-10 rounded-full border border-solvorry-DEFAULT/20 flex items-center justify-center mb-1">
                        <MapPin className="w-4 h-4 text-solvorry-DEFAULT" />
                     </div>
@@ -352,20 +376,13 @@ export default function HomePage() {
             <div className="hidden md:block absolute top-8 left-0 w-full h-[1px] bg-neutral-200" />
             
             <div className="grid grid-cols-1 md:grid-cols-6 gap-8">
-              {[
-                { num: "01", title: "DISCOVER", desc: "Understand your brand & objectives" },
-                { num: "02", title: "DESIGN", desc: "Conceptualize & plan" },
-                { num: "03", title: "PRODUCE", desc: "Manufacture with precision" },
-                { num: "04", title: "DEPLOY", desc: "Rollout & installation" },
-                { num: "05", title: "INSPECT", desc: "Quality checks & compliance" },
-                { num: "06", title: "DELIVER", desc: "Handover & ongoing support" }
-              ].map((step, i) => (
-                <SectionReveal key={step.num} delay={i * 100} className="relative flex flex-col items-center text-center">
+              {processSteps.map((step, i) => (
+                <SectionReveal key={step.number || i} delay={i * 100} className="relative flex flex-col items-center text-center">
                   <div className="w-16 h-16 rounded-full bg-solvorry-DEFAULT flex items-center justify-center border-4 border-white mb-6 relative z-10 shadow-sm">
-                    <span className="text-white font-display font-bold text-lg">{step.num}</span>
+                    <span className="text-white font-display font-bold text-lg">{step.number || `0${i + 1}`}</span>
                   </div>
                   <h4 className="font-display font-bold text-neutral-900 mb-2 text-sm tracking-wide">{step.title}</h4>
-                  <p className="text-neutral-500 font-body text-xs leading-relaxed max-w-[120px]">{step.desc}</p>
+                  <p className="text-neutral-500 font-body text-xs leading-relaxed max-w-[120px]">{step.description}</p>
                 </SectionReveal>
               ))}
             </div>
@@ -461,7 +478,7 @@ export default function HomePage() {
             {/* Continuous Marquee Track moving Left to Right */}
             <div className="flex items-center gap-6 sm:gap-8 w-max animate-marquee-reverse group-hover:[animation-play-state:paused] py-4">
               {/* Double array ensures seamless, gap-free infinite translation */}
-              {[...FINANCIAL_CLIENTS, ...FINANCIAL_CLIENTS].map((client, idx) => (
+              {[...clientList, ...clientList].map((client, idx) => (
                 <div
                   key={`${client.name}-${idx}`}
                   className="brand-card-3d group/card relative flex items-center gap-4 px-6 sm:px-8 py-4 sm:py-5 rounded-2xl cursor-default select-none shrink-0"
@@ -473,10 +490,10 @@ export default function HomePage() {
                   <div
                     className="w-11 h-11 rounded-xl flex items-center justify-center relative shadow-[0_2px_5px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_1px_rgba(0,0,0,0.05)] border border-white/90 shrink-0"
                     style={{
-                      background: `linear-gradient(135deg, #ffffff 0%, #f1f5f9 60%, ${client.tint}18 100%)`,
+                      background: `linear-gradient(135deg, #ffffff 0%, #f1f5f9 60%, ${client.tint_color || (client as any).tint || "#283A97"}18 100%)`,
                     }}
                   >
-                    <Landmark className="w-5 h-5 stroke-[2.2]" style={{ color: client.tint }} />
+                    <Landmark className="w-5 h-5 stroke-[2.2]" style={{ color: client.tint_color || (client as any).tint || "#283A97" }} />
                   </div>
 
                   {/* Brand Name with 3D Extruded Lettering */}
@@ -519,27 +536,8 @@ export default function HomePage() {
           </SectionReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                quote: "ACE SELECT delivered exceptional turnkey ATM kiosk fabrication and signage deployment across hundreds of locations nationwide on schedule.",
-                name: "Rohit Sharma",
-                title: "Head - ATM Deployments & Infrastructure",
-                company: "HITACHI PAYMENT SERVICES"
-              },
-              {
-                quote: "Their end-to-end support from optical design to retail installation made our flagship in-store LED display rollouts smooth and flawless.",
-                name: "Neha Verma",
-                title: "Marketing & Retail Projects Head",
-                company: "TITAN COMPANY / CARATLANE"
-              },
-              {
-                quote: "Reliable, innovative and committed. ACE SELECT has been our trusted partner for nationwide banking branch branding and display systems.",
-                name: "Amit Khanna",
-                title: "Chief Manager - Infrastructure & Branding",
-                company: "STATE BANK OF INDIA"
-              }
-            ].map((test, i) => (
-              <SectionReveal key={test.name} delay={i * 100} direction="up">
+            {testimonials.map((test, i) => (
+              <SectionReveal key={test.author_name || (test as any).name || i} delay={i * 100} direction="up">
                 <div className="bg-white p-10 border border-neutral-200 rounded-sm h-full flex flex-col">
                   <span className="text-solvorry-DEFAULT font-display font-black text-6xl leading-none opacity-20 mb-4">&quot;</span>
                   <p className="text-neutral-700 font-body text-base leading-relaxed flex-grow mb-8 font-medium">
@@ -547,12 +545,12 @@ export default function HomePage() {
                   </p>
                   <div className="flex items-center gap-4 mt-auto pt-6 border-t border-neutral-100">
                     <div className="w-12 h-12 bg-neutral-200 rounded-full overflow-hidden">
-                       <img src={`https://i.pravatar.cc/150?u=${test.name}`} alt={test.name} className="w-full h-full object-cover" />
+                       <img src={test.author_photo_url || `https://i.pravatar.cc/150?u=${test.author_name || (test as any).name}`} alt={test.author_name || (test as any).name} className="w-full h-full object-cover" />
                     </div>
                     <div>
-                      <h4 className="font-display font-bold text-neutral-900 text-sm">{test.name}</h4>
-                      <p className="text-neutral-500 font-body text-xs">{test.title}</p>
-                      <p className="text-neutral-900 font-display font-bold text-xs uppercase tracking-wider mt-0.5">{test.company}</p>
+                      <h4 className="font-display font-bold text-neutral-900 text-sm">{test.author_name || (test as any).name}</h4>
+                      <p className="text-neutral-500 font-body text-xs">{test.author_title || (test as any).title}</p>
+                      <p className="text-neutral-900 font-display font-bold text-xs uppercase tracking-wider mt-0.5">{test.author_company || (test as any).company}</p>
                     </div>
                   </div>
                 </div>

@@ -30,8 +30,24 @@ import {
 } from "lucide-react";
 import { Counter } from "@/components/StatCounter";
 import CertificatesShowcase from "@/components/CertificatesShowcase";
+import { getCompanyPage, getHomeStats } from "@/lib/cms-service";
 
-export default function WhoWeArePage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const STAT_ICONS: Record<string, React.ReactNode> = {
+  Building2: <Building2 className="w-6 h-6 text-neutral-400" />,
+  TrendingUp: <TrendingUp className="w-6 h-6 text-neutral-400" />,
+  Monitor: <Monitor className="w-6 h-6 text-neutral-400" />,
+  Calendar: <Calendar className="w-6 h-6 text-neutral-400" />,
+};
+
+export default async function WhoWeArePage() {
+  const [company, stats] = await Promise.all([
+    getCompanyPage(),
+    getHomeStats(),
+  ]);
+
   return (
     <div className="bg-white">
       {/* 1. Hero Section */}
@@ -40,7 +56,7 @@ export default function WhoWeArePage() {
         <div className="absolute inset-0 w-full h-full z-0">
           <div className="absolute inset-0 bg-gradient-to-r from-[#0B0F2B] via-[#0B0F2B]/85 to-[#0B0F2B]/70 z-10" />
           <video 
-            src="/company-hero.mp4" 
+            src={company.videoUrl || "/company-hero.mp4"} 
             className="w-full h-full object-cover absolute inset-0" 
             autoPlay 
             loop 
@@ -161,18 +177,13 @@ export default function WhoWeArePage() {
             </SectionReveal>
 
             <div className="lg:w-3/4 flex flex-col sm:flex-row justify-between divide-y sm:divide-y-0 sm:divide-x divide-neutral-200 w-full text-center">
-              {[
-                { icon: <Building2 className="w-6 h-6 text-neutral-400" />, end: 476, suffix: "+", label: "CITIES SERVED" },
-                { icon: <TrendingUp className="w-6 h-6 text-neutral-400" />, end: 100, prefix: "₹", suffix: " CR+", label: "ANNUAL TURNOVER" },
-                { icon: <Monitor className="w-6 h-6 text-neutral-400" />, end: 34250, suffix: " m²+", label: "ACTIVE LED INSTALLED" },
-                { icon: <Calendar className="w-6 h-6 text-neutral-400" />, end: 10000, suffix: " m²/YR", label: "ANNUAL CAPACITY" },
-              ].map((stat, i) => (
-                <SectionReveal key={stat.label} delay={i * 100} className="flex-1 py-8 sm:py-0 flex flex-col items-center justify-center group">
+              {stats.map((stat, i) => (
+                <SectionReveal key={stat.id || stat.label || i} delay={i * 100} className="flex-1 py-8 sm:py-0 flex flex-col items-center justify-center group">
                   <div className="mb-4 opacity-70 group-hover:opacity-100 transition-opacity">
-                    {stat.icon}
+                    {STAT_ICONS[stat.icon_name] || <Building2 className="w-6 h-6 text-neutral-400" />}
                   </div>
                   <div className="font-display font-black text-4xl text-solvorry-DEFAULT mb-2 tabular-nums tracking-tight">
-                    <Counter end={stat.end} prefix={stat.prefix} suffix={stat.suffix} />
+                    <Counter end={stat.end_value} prefix={stat.prefix || ""} suffix={stat.suffix || ""} />
                   </div>
                   <div className="text-neutral-500 font-display font-bold tracking-widest text-[10px] uppercase">
                     {stat.label}
@@ -433,7 +444,7 @@ export default function WhoWeArePage() {
                 <span className="text-solvorry-DEFAULT">INTO IMPACTFUL REALITIES.</span>
               </h2>
               <p className="text-neutral-600 font-body text-base mb-12 leading-relaxed">
-                By thoroughly understanding our clients&apos; current and future needs and business essence, our mission is to deliver inventive, elegant, and multi-functional spaces that elevate brand equity across India.
+                {company.mission || "By thoroughly understanding our clients' current and future needs and business essence, our mission is to deliver inventive, elegant, and multi-functional spaces that elevate brand equity across India."}
               </p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 border-t border-neutral-100 pt-10">
@@ -445,7 +456,7 @@ export default function WhoWeArePage() {
                     OUR VISION
                   </h4>
                   <p className="text-neutral-500 font-body text-xs leading-relaxed">
-                    To be India&apos;s most respected leader in Advertising, Branding, and Commercial Construction, renowned for beyond-the-box creative thinking.
+                    {company.vision || "To be India's most respected leader in Advertising, Branding, and Commercial Construction, renowned for beyond-the-box creative thinking."}
                   </p>
                 </div>
                 <div>
