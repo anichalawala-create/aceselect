@@ -28,6 +28,8 @@ import type {
   TeamMemberCMS,
   CMSEnquiry,
   CompanyPage,
+  PageContent,
+  PageContentMap,
 } from "@/types/cms";
 
 // ================================================================
@@ -47,6 +49,41 @@ function readCacheSection<T>(section: string, fallback: T): T {
     console.warn(`[CMS] Error reading cache for ${section}:`, err);
   }
   return fallback;
+}
+
+const CMS_CACHE_PATH = path.resolve(process.cwd(), "src/data/cms-content-cache.json");
+
+/** Read all page-content rows from the local cache, including inactive admin rows. */
+export function readPageContentCache(): PageContent[] {
+  const cached = readCacheSection<unknown>("page_content", []);
+  if (Array.isArray(cached)) return cached as PageContent[];
+
+  // Accept a page-slug keyed cache as well, which makes hand-editing the fallback
+  // file convenient without changing the public service contract.
+  if (cached && typeof cached === "object") {
+    return Object.values(cached as Record<string, unknown>)
+      .flatMap((rows) => (Array.isArray(rows) ? rows : [rows])) as PageContent[];
+  }
+
+  return [];
+}
+
+/** Persist page-content rows while preserving the other CMS cache sections. */
+export function writePageContentCache(rows: PageContent[]): void {
+  let cache: Record<string, unknown> = {};
+  try {
+    if (fs.existsSync(CMS_CACHE_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(CMS_CACHE_PATH, "utf-8"));
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        cache = parsed as Record<string, unknown>;
+      }
+    }
+    cache.page_content = rows;
+    fs.writeFileSync(CMS_CACHE_PATH, `${JSON.stringify(cache, null, 2)}\n`, "utf-8");
+  } catch (err) {
+    console.warn("[CMS] Error writing page-content cache:", err);
+    throw new Error("Unable to persist the local page-content cache.");
+  }
 }
 
 // ================================================================
@@ -77,6 +114,36 @@ async function fetchFromDB<T>(
     return null;
   }
 }
+
+// ================================================================
+// PAGE CONTENT OVERRIDES
+// ================================================================
+/**
+ * Return active page-content overrides keyed by their stable content key.
+ * Supabase is preferred; an empty/error response falls back to the local cache.
+ */
+export async function getPageContent(pageSlug: string): Promise<PageContentMap> {
+  const data = await fetchFromDB<PageContent[]>("cms_page_content", async (supabase) =>
+    supabase
+      .from("cms_page_content")
+      .select("*")
+      .eq("page_slug", pageSlug)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+  );
+
+  const rows = data && data.length > 0
+    ? data
+    : readPageContentCache().filter((row) => row.page_slug === pageSlug && row.is_active !== false);
+
+  return rows.reduce<PageContentMap>((map, row) => {
+    if (row?.content_key) map[row.content_key] = row;
+    return map;
+  }, {});
+}
+
+// Explicit alias for callers that prefer the return shape in the function name.
+export const getPageContentMap = getPageContent;
 
 // ================================================================
 // SITE SETTINGS

@@ -62,6 +62,29 @@ export interface PageSEO {
 }
 
 // -------------------------------------------------------
+// PAGE CONTENT OVERRIDES
+// -------------------------------------------------------
+export type PageContentType = "text" | "image" | "video";
+
+/** A stable, addressable content override for a public page. */
+export interface PageContent {
+  id: string;
+  page_slug: string;
+  content_key: string;
+  label: string;
+  content_type: PageContentType;
+  value: string;
+  media_url?: string | null;
+  alt_text?: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PageContentMap = Record<string, PageContent>;
+
+// -------------------------------------------------------
 // HOMEPAGE
 // -------------------------------------------------------
 export interface HeroContent {
