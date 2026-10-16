@@ -543,6 +543,53 @@ ALTER TABLE cms_industries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Public READ policies (website can read active content anonymously)
+-- Drop first so this migration can be safely re-run after a partial deploy.
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Public can read active projects" ON cms_projects;
+  DROP POLICY IF EXISTS "Public can read active products" ON cms_products;
+  DROP POLICY IF EXISTS "Public can read product cats" ON product_categories;
+  DROP POLICY IF EXISTS "Public can read clients" ON cms_clients;
+  DROP POLICY IF EXISTS "Public can read testimonials" ON cms_testimonials;
+  DROP POLICY IF EXISTS "Public can read certifications" ON cms_certifications;
+  DROP POLICY IF EXISTS "Public can read home stats" ON home_stats;
+  DROP POLICY IF EXISTS "Public can read process steps" ON home_process_steps;
+  DROP POLICY IF EXISTS "Public can read pan india stats" ON pan_india_stats;
+  DROP POLICY IF EXISTS "Public can read team members" ON team_members;
+  DROP POLICY IF EXISTS "Public can read industries" ON cms_industries;
+  DROP POLICY IF EXISTS "Public can read site settings" ON site_settings;
+  DROP POLICY IF EXISTS "Public can read hero content" ON hero_content;
+  DROP POLICY IF EXISTS "Public can read home about" ON home_about;
+  DROP POLICY IF EXISTS "Public can read page seo" ON page_seo;
+  DROP POLICY IF EXISTS "Public can read company page" ON company_page;
+  DROP POLICY IF EXISTS "Public can read featured projs" ON home_featured_projects;
+  DROP POLICY IF EXISTS "Anyone can submit enquiry" ON cms_enquiries;
+  DROP POLICY IF EXISTS "Admins can manage projects" ON cms_projects;
+  DROP POLICY IF EXISTS "Admins can manage products" ON cms_products;
+  DROP POLICY IF EXISTS "Admins can manage product cats" ON product_categories;
+  DROP POLICY IF EXISTS "Admins can manage clients" ON cms_clients;
+  DROP POLICY IF EXISTS "Admins can manage testimonials" ON cms_testimonials;
+  DROP POLICY IF EXISTS "Admins can manage certs" ON cms_certifications;
+  DROP POLICY IF EXISTS "Admins can manage media" ON media_library;
+  DROP POLICY IF EXISTS "Admins can manage enquiries" ON cms_enquiries;
+  DROP POLICY IF EXISTS "Admins can update enquiries" ON cms_enquiries;
+  DROP POLICY IF EXISTS "Admins can manage settings" ON site_settings;
+  DROP POLICY IF EXISTS "Admins can manage seo" ON page_seo;
+  DROP POLICY IF EXISTS "Admins can manage hero" ON hero_content;
+  DROP POLICY IF EXISTS "Admins can manage home about" ON home_about;
+  DROP POLICY IF EXISTS "Admins can manage home stats" ON home_stats;
+  DROP POLICY IF EXISTS "Admins can manage process steps" ON home_process_steps;
+  DROP POLICY IF EXISTS "Admins can manage pan india" ON pan_india_stats;
+  DROP POLICY IF EXISTS "Admins can manage team" ON team_members;
+  DROP POLICY IF EXISTS "Admins can manage company page" ON company_page;
+  DROP POLICY IF EXISTS "Admins can manage industries" ON cms_industries;
+  DROP POLICY IF EXISTS "Admins can manage featured" ON home_featured_projects;
+  DROP POLICY IF EXISTS "Admins can read audit logs" ON audit_logs;
+  DROP POLICY IF EXISTS "Admins can read own profile" ON admin_users;
+  DROP POLICY IF EXISTS "Super admin can manage users" ON admin_users;
+END;
+$$;
+
 CREATE POLICY "Public can read active projects"  ON cms_projects    FOR SELECT USING (is_active = true);
 CREATE POLICY "Public can read active products"  ON cms_products    FOR SELECT USING (is_active = true);
 CREATE POLICY "Public can read product cats"     ON product_categories FOR SELECT USING (is_active = true);
