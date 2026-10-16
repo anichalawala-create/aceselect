@@ -1,40 +1,66 @@
-# Ace Select
+# ACE SELECT
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/15ba8f3d-8fea-4729-afa4-03f33d46d1bd/deploy-status)](https://app.netlify.com/projects/acedkselect/deploys)
+ACE SELECT is a Next.js website with a Supabase-backed admin CMS. The admin
+Page Content editor lets an authorized administrator edit registered text
+fields, upload or replace page images/videos, hide fields, and preview each
+public page.
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Requirements
 
-## Getting Started
+- Node.js `20.19.0` (see `.nvmrc`)
+- npm (the repository lockfile is authoritative)
+- A Supabase project for production authentication, storage, and CMS persistence
 
-First, run the development server:
+## Setup
+
+```bash
+npm ci
+cp .env.example .env.local
+```
+
+On Windows PowerShell, use `Copy-Item .env.example .env.local` instead of
+`cp`. Fill in the Supabase values in `.env.local`.
+
+For a new Supabase project, apply these SQL files in order in the Supabase SQL
+Editor:
+
+1. `supabase/migrations/20261002_ace_select_cms.sql`
+2. `supabase/migrations/20261016_page_content.sql`
+
+The second migration is idempotent and seeds editable fields for Home, Who We
+Are, Services, Industries, Projects, and Contact.
+
+## Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open <http://localhost:3000>. Sign in at `/admin/login`, then open **Page
+Content**. Choose a page, edit the field label/key/value or media, and select
+**Save All**. Uploaded media is stored through `/api/admin/upload`; content
+rows are persisted to Supabase and the local cache fallback.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Checks
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm test       # offline typecheck + CMS cache validation
+npm run lint   # repository lint
+npm run build
+```
 
-## Learn More
+`make test` runs the same offline test command. The Dockerfile provides a
+reproducible Node 20 production image:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+docker build -t aceselect .
+docker run --env-file .env.local -p 3000:3000 aceselect
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Database SQL
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The page-level customization schema and seed data are in
+`supabase/migrations/20261016_page_content.sql`. It creates the
+`cms_page_content` table, public active-content reads, admin write policies,
+indexes, and representative text/media rows. Administrators can add unlimited
+content keys from `/admin/content` without changing the schema.

@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   typescript: {
     // Allow production builds even with TS errors (stub pages)
     ignoreBuildErrors: true,

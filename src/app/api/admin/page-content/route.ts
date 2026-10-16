@@ -65,9 +65,6 @@ function normalizeRow(input: PageContentInput, existing?: PageContent): PageCont
   if (mediaUrl !== null && mediaUrl !== undefined && typeof mediaUrl !== "string") {
     throw new Error("media_url must be a string or null.");
   }
-  if (!value.trim() && !mediaUrl) {
-    throw new Error("Provide value or media_url for page content.");
-  }
   if (!Number.isInteger(sortOrder) || sortOrder < 0) {
     throw new Error("sort_order must be a non-negative integer.");
   }
@@ -113,7 +110,7 @@ export async function GET(req: Request) {
     return errorResponse("Unauthorized. Sign in with an active admin account to manage page content.", 401);
   }
 
-  const pageSlug = new URL(req.url).searchParams.get("page_slug") || new URL(req.url).searchParams.get("page");
+  const pageSlug = new URL(req.url).searchParams.get("page_slug") || new URL(req.url).searchParams.get("page") || new URL(req.url).searchParams.get("slug");
   const localRows = readPageContentCache();
   const supabase = getSupabaseAdmin();
 
@@ -122,9 +119,12 @@ export async function GET(req: Request) {
     if (pageSlug) query = query.eq("page_slug", pageSlug);
     const { data, error } = await query;
     if (!error) {
-      return NextResponse.json({ page_content: data || [], source: "supabase" });
+      const pageContent = data || [];
+      return NextResponse.json({ success: true, data: pageContent, page_content: pageContent, source: "supabase" });
     }
     return NextResponse.json({
+      success: true,
+      data: filterRows(localRows, pageSlug),
       page_content: filterRows(localRows, pageSlug),
       source: "local",
       warning: "Supabase page content could not be read; showing the local cache.",
@@ -133,6 +133,8 @@ export async function GET(req: Request) {
   }
 
   return NextResponse.json({
+    success: true,
+    data: filterRows(localRows, pageSlug),
     page_content: filterRows(localRows, pageSlug),
     source: "local",
     warning: isSupabaseConfigured()
@@ -156,8 +158,10 @@ export async function POST(req: Request) {
 
   const inputs = Array.isArray(body)
     ? body
-    : body && typeof body === "object" && Array.isArray((body as { page_content?: unknown }).page_content)
-      ? (body as { page_content: unknown[] }).page_content
+    : body && typeof body === "object" && Array.isArray((body as { items?: unknown[] }).items)
+      ? (body as { items: unknown[] }).items
+      : body && typeof body === "object" && Array.isArray((body as { page_content?: unknown[] }).page_content)
+        ? (body as { page_content: unknown[] }).page_content
       : [body];
   if (inputs.length === 0) return errorResponse("Provide one page-content object or a non-empty array.", 400);
 
@@ -188,6 +192,7 @@ export async function POST(req: Request) {
   if (!supabase) {
     return NextResponse.json({
       success: true,
+      data: changedRows,
       page_content: changedRows,
       local_cache_persisted: true,
       supabase_persisted: false,
@@ -216,7 +221,7 @@ export async function POST(req: Request) {
     ...rows.filter((row) => !persistedKeys.has(`${row.page_slug}:${row.content_key}`)),
     ...persistedRows,
   ]);
-  return NextResponse.json({ success: true, page_content: persistedRows, local_cache_persisted: true, supabase_persisted: true });
+  return NextResponse.json({ success: true, data: persistedRows, page_content: persistedRows, local_cache_persisted: true, supabase_persisted: true });
 }
 
 export async function DELETE(req: Request) {
@@ -227,7 +232,7 @@ export async function DELETE(req: Request) {
 
   const params = new URL(req.url).searchParams;
   const id = params.get("id");
-  const pageSlug = params.get("page_slug") || params.get("page");
+  const pageSlug = params.get("page_slug") || params.get("page") || params.get("slug");
   const contentKey = params.get("content_key") || params.get("key");
   if (!id && (!pageSlug || !contentKey)) {
     return errorResponse("Provide id, or both page_slug and content_key, to remove page content.", 400);

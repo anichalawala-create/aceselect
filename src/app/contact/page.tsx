@@ -2,8 +2,13 @@ import SectionReveal from "@/components/SectionReveal";
 import ContactForm from "@/components/ContactForm";
 import { EditorialHeadline, Eyebrow } from "@/components/ui/Typography";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
+import { getPageContent, getPageContentValue } from "@/lib/cms-service";
 
-export default function ContactPage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function ContactPage() {
+  const pageContent = await getPageContent("contact");
   return (
     <>
       {/* Header */}
@@ -11,12 +16,12 @@ export default function ContactPage() {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <SectionReveal>
             <div className="max-w-4xl">
-              <Eyebrow className="mb-6">CONTACT US</Eyebrow>
+              <Eyebrow className="mb-6">{getPageContentValue(pageContent, "hero.eyebrow", "CONTACT US")}</Eyebrow>
               <EditorialHeadline className="mb-6">
-                START A <span className="text-solvorry-DEFAULT">CONVERSATION</span>
+                {getPageContentValue(pageContent, "hero.headline", "START A\nCONVERSATION").split("\n").map((line, index, lines) => <span key={`${line}-${index}`} className={index === lines.length - 1 ? "text-solvorry-DEFAULT" : ""}>{index > 0 && <br />}{line}</span>)}
               </EditorialHeadline>
               <p className="text-neutral-600 font-light text-xl md:text-2xl max-w-2xl leading-relaxed">
-                Ready to elevate your brand? Reach out and let&apos;s discuss your vision and spatial requirements.
+                {getPageContentValue(pageContent, "hero.intro", "Ready to elevate your brand? Reach out and let's discuss your vision and spatial requirements.")}
               </p>
             </div>
           </SectionReveal>

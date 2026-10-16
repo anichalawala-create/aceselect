@@ -31,6 +31,7 @@ import {
   CheckCheck,
   Server,
   ExternalLink,
+  PanelsTopLeft,
 } from "lucide-react";
 
 // Admin nav items with sub-items
@@ -95,6 +96,11 @@ const NAV_ITEMS = [
     label: "Media Library",
     href: "/admin/media",
     icon: ImageIcon,
+  },
+  {
+    label: "Page Content",
+    href: "/admin/content",
+    icon: PanelsTopLeft,
   },
   {
     label: "Enquiries / Leads",

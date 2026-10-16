@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { Counter } from "@/components/StatCounter";
 import CertificatesShowcase from "@/components/CertificatesShowcase";
-import { getCompanyPage, getHomeStats } from "@/lib/cms-service";
+import { getCompanyPage, getHomeStats, getPageContent, getPageContentValue, getPageContentMedia } from "@/lib/cms-service";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -43,10 +43,16 @@ const STAT_ICONS: Record<string, React.ReactNode> = {
 };
 
 export default async function WhoWeArePage() {
-  const [company, stats] = await Promise.all([
+  const [company, stats, pageContent] = await Promise.all([
     getCompanyPage(),
     getHomeStats(),
+    getPageContent("who-we-are"),
   ]);
+
+  const heroHeadline = getPageContentValue(pageContent, "hero.headline", `${company.hero_headline}\n${company.hero_highlight}`);
+  const heroLines = heroHeadline.split("\n");
+  const heroVideo = getPageContentMedia(pageContent, "hero.video", company.videoUrl || "/company-hero.mp4");
+  const heroPoster = getPageContentMedia(pageContent, "hero.poster", company.posterUrl || "/home-hero-poster.jpg");
 
   return (
     <div className="bg-white">
@@ -57,13 +63,13 @@ export default async function WhoWeArePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-[#0B0F2B] via-[#0B0F2B]/85 to-[#0B0F2B]/70 z-10" />
           <video 
             className="w-full h-full object-cover absolute inset-0" 
-            poster={company.posterUrl || "/home-hero-poster.jpg"}
+            poster={heroPoster}
             autoPlay 
             loop 
             muted 
             playsInline 
           >
-            <source src={company.videoUrl || "/company-hero.mp4"} type="video/mp4" />
+            <source src={heroVideo} type="video/mp4" />
             <source src="/company-hero.mp4" type="video/mp4" />
             <source src="/home-hero.mp4" type="video/mp4" />
           </video>
@@ -76,14 +82,17 @@ export default async function WhoWeArePage() {
             </nav>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-solvorry-DEFAULT/20 border border-solvorry-light/30 text-solvorry-light text-xs font-semibold uppercase tracking-widest mb-6 w-fit">
               <Sparkles className="w-3.5 h-3.5" />
-              ABOUT ACE SELECT
+              {getPageContentValue(pageContent, "hero.eyebrow", "ABOUT ACE SELECT")}
             </div>
             <h1 className="font-display font-black text-4xl sm:text-6xl lg:text-7xl leading-[1.05] mb-8 tracking-tight drop-shadow-xl text-white">
-              CREATIVE THINKING.<br />
-              <span className="text-solvorry-light">BEYOND THE BOX.</span>
+              {heroLines.map((line, index) => (
+                <span key={`${line}-${index}`} className={index === heroLines.length - 1 ? "text-solvorry-light" : ""}>
+                  {index > 0 && <br />}{line}
+                </span>
+              ))}
             </h1>
             <p className="font-body text-white/90 text-lg md:text-xl max-w-2xl leading-relaxed drop-shadow-md mb-10">
-              At ACE SELECT, creative thinking is the driving force of our designing process. We approach each project with a “beyond the box” mindset, balancing innovation with environmental responsibility—a philosophy deeply embedded in our heritage.
+              {getPageContentValue(pageContent, "hero.intro", company.hero_subheadline)}
             </p>
 
             <div className="flex flex-wrap items-center gap-4">
@@ -110,20 +119,21 @@ export default async function WhoWeArePage() {
           <div className="flex flex-col lg:flex-row items-center gap-16">
             <SectionReveal direction="left" className="lg:w-1/2">
               <div className="text-[10px] tracking-[0.2em] uppercase font-bold text-neutral-400 mb-6 font-display">
-                WHO WE ARE
+                {getPageContentValue(pageContent, "story.eyebrow", "WHO WE ARE")}
               </div>
               <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 leading-[1.1] mb-6 tracking-tight">
-                INVENTIVE SPACES.<br />
-                <span className="text-solvorry-DEFAULT">DESIGN-TO-BUILD EXCELLENCE.</span>
+                {getPageContentValue(pageContent, "story.headline", `${company.who_we_are_headline}\n${company.who_we_are_highlight}`).split("\n").map((line, index) => (
+                  <span key={`${line}-${index}`} className={index > 0 ? "text-solvorry-DEFAULT" : ""}>{index > 0 && <br />}{line}</span>
+                ))}
               </h2>
               <p className="text-neutral-700 font-body text-base mb-6 leading-relaxed">
-                By working closely with clients from concept to completion, we’ve built a reputation for delivering inventive, elegant, and multi-functional spaces. With a presence in over <strong>476+ cities across India</strong>, ACE SELECT is a trusted leader in <strong>Advertising, Branding, and Commercial Construction</strong>.
+                {getPageContentValue(pageContent, "story.body", company.who_we_are_body)}
               </p>
               <p className="text-neutral-600 font-body text-base mb-6 leading-relaxed">
-                We specialize in creating inspiring workspaces and commercial environments, offering a complete suite of design and build services under one roof. Operating in a highly dynamic and sensitive industry, our team brings invaluable insights and deep market understanding to every installation.
+                {getPageContentValue(pageContent, "story.body_secondary", "We specialize in creating inspiring workspaces and commercial environments, offering a complete suite of design and build services under one roof. Operating in a highly dynamic and sensitive industry, our team brings invaluable insights and deep market understanding to every installation.")}
               </p>
               <p className="text-neutral-600 font-body text-base mb-8 leading-relaxed">
-                With an average turnover of <strong>₹100 Crore plus annually</strong>, ACE SELECT is your trusted partner for <strong>constructing, renovating, transferring, or creating new spaces</strong> across diverse sectors.
+                {getPageContentValue(pageContent, "story.body_tertiary", "With an average turnover of ₹100 Crore plus annually, ACE SELECT is your trusted partner for constructing, renovating, transferring, or creating new spaces across diverse sectors.")}
               </p>
 
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-neutral-200">
@@ -149,8 +159,8 @@ export default async function WhoWeArePage() {
             <SectionReveal direction="right" delay={150} className="lg:w-1/2">
               <div className="relative w-full aspect-[4/3] rounded-md overflow-hidden shadow-2xl">
                 <img 
-                  src="/images/projects/project-bkc-elobby.jpg" 
-                  alt="Modern Commercial Workplace Architecture" 
+                  src={getPageContentMedia(pageContent, "story.image", "/images/projects/project-bkc-elobby.jpg")}
+                  alt={getPageContentValue(pageContent, "story.image_alt", "Modern Commercial Workplace Architecture")}
                   className="w-full h-full object-cover" 
                 />
                 <div className="absolute bottom-6 left-6 right-6 p-6 bg-[#0B0F2B]/90 backdrop-blur-md text-white border-l-4 border-solvorry-light">

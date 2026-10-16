@@ -145,6 +145,18 @@ export async function getPageContent(pageSlug: string): Promise<PageContentMap> 
 // Explicit alias for callers that prefer the return shape in the function name.
 export const getPageContentMap = getPageContent;
 
+/** Resolve a text override without making public pages know about database rows. */
+export function getPageContentValue(content: PageContentMap, key: string, fallback: string): string {
+  const value = content[key]?.value?.trim();
+  return value || fallback;
+}
+
+/** Resolve an uploaded asset override, falling back to the row value for hand-entered URLs. */
+export function getPageContentMedia(content: PageContentMap, key: string, fallback: string): string {
+  const row = content[key];
+  return row?.media_url?.trim() || row?.value?.trim() || fallback;
+}
+
 // ================================================================
 // SITE SETTINGS
 // ================================================================

@@ -2,6 +2,7 @@ import SectionReveal from "@/components/SectionReveal";
 import { EditorialHeadline, Eyebrow } from "@/components/ui/Typography";
 import { Breadcrumbs } from "@/components/ui/Interactions";
 import { ProjectCard } from "@/components/ui/Cards";
+import { getPageContent, getPageContentValue, getPageContentMedia } from "@/lib/cms-service";
 
 interface PortfolioItem {
   id: string;
@@ -311,7 +312,12 @@ const tabs = [
   { id: "turnkey", label: "Turnkey & Exhibitions", count: turnkeyProjects.length },
 ];
 
-export default function ProjectsPage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function ProjectsPage() {
+  const pageContent = await getPageContent("projects");
+  const headline = getPageContentValue(pageContent, "hero.headline", "LANDMARK\nPROJECTS");
   return (
     <>
       {/* Header */}
@@ -326,12 +332,12 @@ export default function ProjectsPage() {
               className="mb-8"
             />
             <div className="max-w-5xl">
-              <Eyebrow className="mb-6">AUTHENTIC COMPANY PORTFOLIO</Eyebrow>
+              <Eyebrow className="mb-6">{getPageContentValue(pageContent, "hero.eyebrow", "AUTHENTIC COMPANY PORTFOLIO")}</Eyebrow>
               <EditorialHeadline className="mb-8">
-                LANDMARK <span className="text-solvorry-DEFAULT">PROJECTS</span>
+                {headline.split("\n").map((line, index, lines) => <span key={`${line}-${index}`} className={index === lines.length - 1 ? "text-solvorry-DEFAULT" : ""}>{index > 0 && <br />}{line}</span>)}
               </EditorialHeadline>
               <p className="text-neutral-600 font-light text-xl md:text-2xl leading-relaxed max-w-3xl">
-                Real landmark installations delivered by ACE SELECT across 476+ cities—encompassing over 34,250 m² of Active LED displays, national banking ATM networks, commercial construction, and pan-India branding. Click on any project to explore full case studies, technical specifications, and galleries.
+                {getPageContentValue(pageContent, "hero.intro", "Real landmark installations delivered by ACE SELECT across 476+ cities—encompassing over 34,250 m² of Active LED displays, national banking ATM networks, commercial construction, and pan-India branding. Click on any project to explore full case studies, technical specifications, and galleries.")}
               </p>
             </div>
           </SectionReveal>
@@ -406,7 +412,7 @@ export default function ProjectsPage() {
                     title={p.title}
                     category={p.category}
                     location={p.location}
-                    imageUrl={p.imageUrl}
+                    imageUrl={getPageContentMedia(pageContent, `project.${p.id}.image`, p.imageUrl)}
                     href={`/projects/${p.id}`}
                   />
                   {p.scope && (
@@ -446,7 +452,7 @@ export default function ProjectsPage() {
                     title={p.title}
                     category={p.category}
                     location={p.location}
-                    imageUrl={p.imageUrl}
+                    imageUrl={getPageContentMedia(pageContent, `project.${p.id}.image`, p.imageUrl)}
                     href={`/projects/${p.id}`}
                   />
                   {p.scope && (
@@ -486,7 +492,7 @@ export default function ProjectsPage() {
                     title={p.title}
                     category={p.category}
                     location={p.location}
-                    imageUrl={p.imageUrl}
+                    imageUrl={getPageContentMedia(pageContent, `project.${p.id}.image`, p.imageUrl)}
                     href={`/projects/${p.id}`}
                   />
                   {p.scope && (
@@ -526,7 +532,7 @@ export default function ProjectsPage() {
                     title={p.title}
                     category={p.category}
                     location={p.location}
-                    imageUrl={p.imageUrl}
+                    imageUrl={getPageContentMedia(pageContent, `project.${p.id}.image`, p.imageUrl)}
                     href={`/projects/${p.id}`}
                   />
                   {p.scope && (

@@ -1,8 +1,14 @@
 import SectionReveal from "@/components/SectionReveal";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Star, Network, ShieldCheck, Zap, CheckCircle2 } from "lucide-react";
+import { getPageContent, getPageContentValue, getPageContentMedia } from "@/lib/cms-service";
 
-export default function CapabilitiesPage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function CapabilitiesPage() {
+  const pageContent = await getPageContent("services");
+  const heroImage = getPageContentMedia(pageContent, "hero.image", "");
   return (
     <div className="bg-white min-h-screen selection:bg-solvorry-DEFAULT selection:text-white font-body overflow-hidden">
       
@@ -17,6 +23,7 @@ export default function CapabilitiesPage() {
           <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(40, 58, 151, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(40, 58, 151, 0.03) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
         </div>
 
+        {heroImage && <img src={heroImage} alt={getPageContentValue(pageContent, "hero.image_alt", "Services") } className="absolute inset-0 h-full w-full object-cover opacity-10" />}
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col lg:flex-row gap-16 lg:gap-8 justify-between relative z-10">
           
           {/* Left: Content */}
@@ -28,20 +35,18 @@ export default function CapabilitiesPage() {
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-[2px] bg-solvorry-DEFAULT" />
               <div className="text-[10px] tracking-[0.2em] uppercase font-bold font-display text-neutral-800">
-                WHAT WE DO BEST
+                {getPageContentValue(pageContent, "hero.eyebrow", "WHAT WE DO BEST")}
               </div>
             </div>
             
             <h1 className="font-display font-black text-6xl md:text-7xl lg:text-[6rem] leading-[1.05] mb-8 tracking-tight text-neutral-900 drop-shadow-sm">
-              END-TO-END<br/>
-              SOLUTIONS<br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-solvorry-DEFAULT to-solvorry-light">FOR EVERY SPACE.</span>
+              {getPageContentValue(pageContent, "hero.headline", "END-TO-END\nSOLUTIONS\nFOR EVERY SPACE.").split("\n").map((line, index, lines) => (
+                <span key={`${line}-${index}`} className={index === lines.length - 1 ? "text-transparent bg-clip-text bg-gradient-to-r from-solvorry-DEFAULT to-solvorry-light" : ""}>{index > 0 && <br />}{line}</span>
+              ))}
             </h1>
             
             <p className="font-body text-neutral-600 text-lg md:text-xl max-w-xl leading-relaxed mb-12 font-medium">
-              From branding and retail execution to commercial interiors,
-              activations and rebranding, ACE SELECT delivers integrated
-              solutions designed for scale.
+              {getPageContentValue(pageContent, "hero.intro", "From branding and retail execution to commercial interiors, activations and rebranding, ACE SELECT delivers integrated solutions designed for scale.")}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-6">

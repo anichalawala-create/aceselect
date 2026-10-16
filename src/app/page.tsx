@@ -12,6 +12,9 @@ import {
   getPanIndiaStats,
   getClients,
   getTestimonials,
+  getPageContent,
+  getPageContentValue,
+  getPageContentMedia,
 } from "@/lib/cms-service";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +45,7 @@ const DEFAULT_CLIENTS = [
 ];
 
 export default async function HomePage() {
-  const [hero, stats, about, processSteps, panIndia, clients, testimonials] = await Promise.all([
+  const [hero, stats, about, processSteps, panIndia, clients, testimonials, pageContent] = await Promise.all([
     getHeroContent(),
     getHomeStats(),
     getHomeAbout(),
@@ -50,9 +53,28 @@ export default async function HomePage() {
     getPanIndiaStats(),
     getClients(),
     getTestimonials(),
+    getPageContent("home"),
   ]);
 
   const clientList = clients && clients.length > 0 ? clients : DEFAULT_CLIENTS;
+  const editableHero = {
+    ...hero,
+    eyebrow_text: getPageContentValue(pageContent, "hero.eyebrow", hero.eyebrow_text),
+    headline_line1: getPageContentValue(pageContent, "hero.headline_line1", hero.headline_line1),
+    headline_line2: getPageContentValue(pageContent, "hero.headline_line2", hero.headline_line2),
+    subheadline: getPageContentValue(pageContent, "hero.subheadline", hero.subheadline),
+    bottom_tagline: getPageContentValue(pageContent, "hero.bottom_tagline", hero.bottom_tagline),
+    background_video_url: getPageContentMedia(pageContent, "hero.background", hero.background_video_url || "/videos/homepage-hero.mp4"),
+    poster_url: getPageContentMedia(pageContent, "hero.poster", hero.poster_url || ""),
+  };
+  const editableAbout = {
+    ...about,
+    eyebrow: getPageContentValue(pageContent, "about.eyebrow", about.eyebrow),
+    headline: getPageContentValue(pageContent, "about.headline", about.headline),
+    body_paragraph1: getPageContentValue(pageContent, "about.body1", about.body_paragraph1),
+    body_paragraph2: getPageContentValue(pageContent, "about.body2", about.body_paragraph2),
+    image_url: getPageContentMedia(pageContent, "about.image", about.image_url),
+  };
 
   return (
     <div className="bg-white w-full max-w-full overflow-x-hidden">
@@ -61,7 +83,7 @@ export default async function HomePage() {
       <section className="relative min-h-[90vh] text-white flex flex-col justify-center pt-24 pb-12 overflow-hidden z-0" aria-label="Hero section">
         {/* Full-screen background video with instant frame poster */}
         <div className="absolute inset-0 z-0">
-          <HeroVideo videoSrc={hero.background_video_url || "/videos/homepage-hero.mp4"} poster={hero.poster_url || ""} />
+          <HeroVideo videoSrc={editableHero.background_video_url} poster={editableHero.poster_url} />
         </div>
 
         <div className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12 mt-10 flex-grow">
@@ -71,16 +93,16 @@ export default async function HomePage() {
             <div className="absolute -left-4 sm:-left-6 lg:-left-8 top-8 bottom-8 w-1 bg-solvorry-light shadow-[0_0_15px_rgba(74,96,212,0.5)]" />
             
             <p className="text-white/90 tracking-[0.12em] sm:tracking-[0.2em] text-[11px] sm:text-xs font-semibold mb-6 drop-shadow-md uppercase">
-              {hero.eyebrow_text || "INDIAN OEM & MANUFACTURER | ACTIVE LED & DIGITAL SIGNAGE"}
+              {editableHero.eyebrow_text || "INDIAN OEM & MANUFACTURER | ACTIVE LED & DIGITAL SIGNAGE"}
             </p>
             
             <h1 className="font-display font-black text-4xl sm:text-5xl md:text-6xl lg:text-[4.6rem] leading-[1.08] mb-6 tracking-tight drop-shadow-2xl uppercase">
-              {hero.headline_line1} <br/>
-              <span className="text-solvorry-light">{hero.headline_line2}</span>
+              {editableHero.headline_line1} <br/>
+              <span className="text-solvorry-light">{editableHero.headline_line2}</span>
             </h1>
             
             <p className="text-white/95 text-base sm:text-lg md:text-xl max-w-2xl mb-12 font-medium leading-relaxed drop-shadow-lg">
-              {hero.subheadline}
+              {editableHero.subheadline}
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mb-20">
@@ -102,7 +124,7 @@ export default async function HomePage() {
             
             <div className="mt-auto">
               <p className="text-[10px] tracking-widest text-white/90 uppercase leading-relaxed font-semibold drop-shadow-md whitespace-pre-line">
-                {hero.bottom_tagline || "PROFESSIONALLY ENGINEERED\nAPPLICATION-SPECIFIC DISPLAY SYSTEMS"}
+                {editableHero.bottom_tagline || "PROFESSIONALLY ENGINEERED\nAPPLICATION-SPECIFIC DISPLAY SYSTEMS"}
               </p>
             </div>
           </div>
@@ -112,7 +134,7 @@ export default async function HomePage() {
             {/* Right Side Vertical Text */}
             <div className="hidden xl:flex flex-col items-end justify-center absolute right-8 top-1/2 -translate-y-1/2">
                <div className="flex flex-col gap-5 text-[10px] tracking-[0.3em] font-semibold text-white/90 uppercase leading-none text-right drop-shadow-lg">
-                  {(hero.vertical_labels && hero.vertical_labels.length > 0 ? hero.vertical_labels : ["GOVERNMENT", "BANKING", "CORPORATE", "INSTITUTIONAL", "COMMERCIAL", "MISSION-CRITICAL"]).map((lbl) => (
+                  {(pageContent["hero.vertical_labels"]?.value?.split("\n").filter(Boolean) || hero.vertical_labels || ["GOVERNMENT", "BANKING", "CORPORATE", "INSTITUTIONAL", "COMMERCIAL", "MISSION-CRITICAL"]).map((lbl) => (
                     <p key={lbl}>{lbl}</p>
                   ))}
                </div>
@@ -158,17 +180,17 @@ export default async function HomePage() {
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-8 h-[2px] bg-solvorry-DEFAULT" />
                 <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">
-                  {about.eyebrow || "ABOUT ACE SELECT"}
+                  {editableAbout.eyebrow || "ABOUT ACE SELECT"}
                 </span>
               </div>
               <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 mb-8 tracking-tight leading-[1.1] whitespace-pre-line">
-                {about.headline || "CREATIVE THINKING.\nDESIGNING BEYOND THE BOX."}
+                {editableAbout.headline || "CREATIVE THINKING.\nDESIGNING BEYOND THE BOX."}
               </h2>
               <p className="text-neutral-600 font-body text-lg leading-relaxed mb-6 max-w-xl">
-                {about.body_paragraph1 || about.body1}
+                {editableAbout.body_paragraph1 || editableAbout.body1}
               </p>
               <p className="text-neutral-600 font-body text-base leading-relaxed mb-8 max-w-xl">
-                {about.body_paragraph2 || about.body2}
+                {editableAbout.body_paragraph2 || editableAbout.body2}
               </p>
               <div className="flex flex-wrap items-center gap-4 mb-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-solvorry-DEFAULT/10 border border-solvorry-DEFAULT/20 text-solvorry-DEFAULT text-xs font-semibold">
@@ -190,8 +212,8 @@ export default async function HomePage() {
             <SectionReveal direction="right" delay={150}>
               <div className="relative w-full aspect-[16/10] overflow-hidden rounded-md">
                 <img 
-                  src={about.image_url || "/images/products/standee-banner.jpg"} 
-                  alt={about.image_alt || "ACE SELECT Android Digital Signage Standee"} 
+                  src={editableAbout.image_url || "/images/products/standee-banner.jpg"}
+                  alt={getPageContentValue(pageContent, "about.image_alt", about.image_alt || "ACE SELECT Android Digital Signage Standee")}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -208,18 +230,18 @@ export default async function HomePage() {
               <div>
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-8 h-[2px] bg-solvorry-DEFAULT" />
-                  <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">OUR PRODUCTS &amp; SOLUTIONS</span>
+                   <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">{getPageContentValue(pageContent, "products.eyebrow", "OUR PRODUCTS & SOLUTIONS")}</span>
                 </div>
                 <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 tracking-tight">
-                  HARDWARE, SIGNAGE<br/>&amp; CLOUD CMS.
+                   {getPageContentValue(pageContent, "products.headline", "HARDWARE, SIGNAGE\n& CLOUD CMS.").split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
                 </h2>
               </div>
               <div className="lg:max-w-md flex flex-col items-start lg:items-end gap-6">
                 <p className="text-neutral-600 font-body text-base lg:text-right">
-                  From active indoor &amp; outdoor LED displays and 4K Android standees to architectural signage and secure Jio Software CMS, explore our end-to-end directory.
+                   {getPageContentValue(pageContent, "products.intro", "From active indoor & outdoor LED displays and 4K Android standees to architectural signage and secure Jio Software CMS, explore our end-to-end directory.")}
                 </p>
                 <a href="#products" className="inline-flex items-center gap-2 text-solvorry-DEFAULT font-display font-bold text-sm tracking-widest uppercase group hover:text-solvorry-dark">
-                  EXPLORE PRODUCT DIRECTORY
+                   {getPageContentValue(pageContent, "products.link_label", "EXPLORE PRODUCT DIRECTORY")}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </a>
               </div>
@@ -260,16 +282,16 @@ export default async function HomePage() {
               <SectionReveal direction="left">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-8 h-[2px] bg-solvorry-DEFAULT" />
-                  <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">PAN INDIA PRESENCE</span>
+                   <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">{getPageContentValue(pageContent, "pan_india.eyebrow", "PAN INDIA PRESENCE")}</span>
                 </div>
                 <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 mb-6 tracking-tight">
-                  BUILT FOR SCALE.
+                   {getPageContentValue(pageContent, "pan_india.headline", "BUILT FOR SCALE.")}
                 </h2>
                 <p className="text-neutral-600 font-body text-lg leading-relaxed mb-10 max-w-md">
-                  From a single location to nationwide rollouts, our network enables consistent execution across India. With a strong on-ground team and trusted partners, we deliver high-quality installations anywhere in the country.
+                   {getPageContentValue(pageContent, "pan_india.intro", "From a single location to nationwide rollouts, our network enables consistent execution across India. With a strong on-ground team and trusted partners, we deliver high-quality installations anywhere in the country.")}
                 </p>
                 <Link href="/contact" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-solvorry-DEFAULT text-white font-display font-semibold transition-all hover:bg-solvorry-dark text-sm group">
-                  OUR PRESENCE
+                   {getPageContentValue(pageContent, "pan_india.cta", "OUR PRESENCE")}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </SectionReveal>
@@ -312,18 +334,18 @@ export default async function HomePage() {
               <div>
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-8 h-[2px] bg-solvorry-DEFAULT" />
-                  <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">FEATURED PROJECTS</span>
+                   <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">{getPageContentValue(pageContent, "projects.eyebrow", "FEATURED PROJECTS")}</span>
                 </div>
                 <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 tracking-tight">
-                  PROJECTS THAT<br/>MAKE AN IMPACT.
+                   {getPageContentValue(pageContent, "projects.headline", "PROJECTS THAT\nMAKE AN IMPACT.").split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
                 </h2>
               </div>
               <div className="lg:max-w-md flex flex-col items-start lg:items-end gap-6">
                 <p className="text-neutral-600 font-body text-base lg:text-right">
-                  Explore some of our recent work across industries. From retail stores and corporate spaces to large-scale outdoor displays, our solutions help brands stand out.
+                   {getPageContentValue(pageContent, "projects.intro", "Explore some of our recent work across industries. From retail stores and corporate spaces to large-scale outdoor displays, our solutions help brands stand out.")}
                 </p>
                 <Link href="/projects" className="inline-flex items-center gap-2 text-solvorry-DEFAULT font-display font-bold text-sm tracking-widest uppercase group hover:text-solvorry-dark">
-                  VIEW ALL PROJECTS
+                   {getPageContentValue(pageContent, "projects.link_label", "VIEW ALL PROJECTS")}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
@@ -359,14 +381,14 @@ export default async function HomePage() {
             <div className="flex flex-col items-center text-center mb-20">
               <div className="flex items-center justify-center gap-4 mb-6">
                 <div className="w-8 h-[2px] bg-solvorry-DEFAULT" />
-                <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">OUR PROCESS</span>
+                 <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">{getPageContentValue(pageContent, "process.eyebrow", "OUR PROCESS")}</span>
                 <div className="w-8 h-[2px] bg-solvorry-DEFAULT" />
               </div>
               <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 tracking-tight mb-6">
-                FROM VISION<br/>TO REALITY.
+                 {getPageContentValue(pageContent, "process.headline", "FROM VISION\nTO REALITY.").split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
               </h2>
               <p className="text-neutral-600 font-body max-w-xl">
-                A streamlined process to ensure quality, consistency and on-time delivery across every project.
+                 {getPageContentValue(pageContent, "process.intro", "A streamlined process to ensure quality, consistency and on-time delivery across every project.")}
               </p>
             </div>
           </SectionReveal>
@@ -398,13 +420,13 @@ export default async function HomePage() {
               <SectionReveal direction="left">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-8 h-[2px] bg-solvorry-DEFAULT" />
-                  <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">CLIENT PORTAL</span>
+                   <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">{getPageContentValue(pageContent, "portal.eyebrow", "CLIENT PORTAL")}</span>
                 </div>
                 <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 mb-6 tracking-tight">
-                  EXECUTION,<br/>CONNECTED.
+                   {getPageContentValue(pageContent, "portal.headline", "EXECUTION,\nCONNECTED.").split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
                 </h2>
                 <p className="text-neutral-600 font-body text-lg leading-relaxed mb-8 max-w-md">
-                  Our proprietary client portal gives complete visibility across every project, from site recce and installation to approvals and final delivery.
+                   {getPageContentValue(pageContent, "portal.intro", "Our proprietary client portal gives complete visibility across every project, from site recce and installation to approvals and final delivery.")}
                 </p>
 
                 <div className="grid grid-cols-2 gap-4 mb-10">
@@ -457,11 +479,11 @@ export default async function HomePage() {
           <SectionReveal className="text-center">
             <div className="flex items-center justify-center gap-4 mb-6">
               <div className="w-8 h-[2px] bg-solvorry-DEFAULT" />
-              <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">OUR CLIENTS</span>
+               <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">{getPageContentValue(pageContent, "clients.eyebrow", "OUR CLIENTS")}</span>
               <div className="w-8 h-[2px] bg-solvorry-DEFAULT" />
             </div>
             <h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl text-neutral-900 tracking-tight">
-              TRUSTED BY LEADING FINANCIAL INSTITUTIONS.
+              {getPageContentValue(pageContent, "clients.headline", "TRUSTED BY LEADING FINANCIAL INSTITUTIONS.")}
             </h2>
           </SectionReveal>
         </div>
@@ -520,10 +542,10 @@ export default async function HomePage() {
               <div>
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-8 h-[2px] bg-solvorry-DEFAULT" />
-                  <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">TESTIMONIALS</span>
+                   <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">{getPageContentValue(pageContent, "testimonials.eyebrow", "TESTIMONIALS")}</span>
                 </div>
                 <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 tracking-tight">
-                  WHAT OUR<br/>CLIENTS SAY.
+                   {getPageContentValue(pageContent, "testimonials.headline", "WHAT OUR\nCLIENTS SAY.").split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
                 </h2>
               </div>
               <div className="lg:max-w-md flex flex-col items-start lg:items-end gap-6">
@@ -570,13 +592,13 @@ export default async function HomePage() {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col md:flex-row items-center justify-between">
           <SectionReveal className="max-w-2xl">
             <h2 className="font-display font-black text-5xl md:text-7xl mb-6 tracking-tight leading-[1.05]">
-              LET&apos;S BUILD<br/>WHAT&apos;S NEXT.
+               {getPageContentValue(pageContent, "cta.headline", "LET'S BUILD\nWHAT'S NEXT.").split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
             </h2>
             <p className="text-white/80 font-body text-lg md:text-xl mb-10 max-w-xl font-light">
-              Partner with ACE SELECT for innovative display, branding and retail solutions that make your brand impossible to ignore.
+               {getPageContentValue(pageContent, "cta.body", "Partner with ACE SELECT for innovative display, branding and retail solutions that make your brand impossible to ignore.")}
             </p>
             <Link href="/contact" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-solvorry-DEFAULT text-white font-display font-semibold transition-all hover:bg-solvorry-light text-sm group">
-              START A CONVERSATION
+               {getPageContentValue(pageContent, "cta.button", "START A CONVERSATION")}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </SectionReveal>

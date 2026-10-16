@@ -2,6 +2,7 @@ import SectionReveal from "@/components/SectionReveal";
 import { EditorialHeadline, Eyebrow } from "@/components/ui/Typography";
 import { Breadcrumbs } from "@/components/ui/Interactions";
 import { CapabilityCard } from "@/components/ui/Cards";
+import { getPageContent, getPageContentValue, getPageContentMedia } from "@/lib/cms-service";
 
 const industries = [
   {
@@ -36,7 +37,13 @@ const industries = [
   }
 ];
 
-export default function IndustriesPage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function IndustriesPage() {
+  const pageContent = await getPageContent("industries");
+  const headline = getPageContentValue(pageContent, "hero.headline", "EXPERTISE ACROSS\nINDUSTRIES");
+  const headlineLines = headline.split("\n");
   return (
     <>
       {/* Header */}
@@ -51,12 +58,12 @@ export default function IndustriesPage() {
               className="mb-8"
             />
             <div className="max-w-5xl">
-              <Eyebrow className="mb-6">SECTORS WE SERVE</Eyebrow>
+              <Eyebrow className="mb-6">{getPageContentValue(pageContent, "hero.eyebrow", "SECTORS WE SERVE")}</Eyebrow>
               <EditorialHeadline className="mb-8">
-                EXPERTISE ACROSS <span className="text-solvorry-DEFAULT">INDUSTRIES</span>
+                {headlineLines.map((line, index) => <span key={`${line}-${index}`} className={index > 0 ? "text-solvorry-DEFAULT" : ""}>{index > 0 && <br />}{line}</span>)}
               </EditorialHeadline>
               <p className="text-neutral-600 font-light text-xl md:text-2xl leading-relaxed max-w-3xl">
-                We bring specialized knowledge and architectural precision to diverse sectors, creating impactful environments for leading global brands.
+                {getPageContentValue(pageContent, "hero.intro", "We bring specialized knowledge and architectural precision to diverse sectors, creating impactful environments for leading global brands.")}
               </p>
             </div>
           </SectionReveal>
@@ -72,7 +79,7 @@ export default function IndustriesPage() {
                 <CapabilityCard 
                   key={index}
                   title={ind.title}
-                  imageUrl={ind.imageUrl}
+                  imageUrl={getPageContentMedia(pageContent, `industry.${index + 1}.image`, ind.imageUrl)}
                   href={ind.href}
                 />
               ))}

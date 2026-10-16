@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "validate:cms": "node scripts/validate-cms.mjs",
+    "test": "npm run typecheck && npm run validate:cms"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
