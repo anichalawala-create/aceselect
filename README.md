@@ -32,6 +32,18 @@ The page-content migrations are idempotent. They seed editable fields for
 Home, Who We Are, Services, Industries, Projects, and Contact, then add
 production-safe key and media URL constraints.
 
+If you want one file that includes the complete schema, seeds, RLS policies,
+storage buckets, page-content editor table, and hardening constraints, run this
+standalone master migration instead:
+
+```text
+supabase/migrations/20261018_ace_select_full_cms.sql
+```
+
+Run the master file once; do not run the three incremental files afterward.
+It is safe to run the master file again if a previous setup was partial or if
+you see a duplicate-policy error.
+
 ## Development
 
 ```bash
