@@ -766,21 +766,33 @@ export default function Navbar() {
                                   </div>
 
                                   {/* Right Pane Footer Link */}
-                                  <div className="mt-2.5 pt-2 border-t border-neutral-100 flex items-center justify-between text-xs">
-                                    <span className="text-[9px] text-neutral-500 font-body truncate">
-                                      Need custom OEM dimensions?
-                                    </span>
-                                    <Link
-                                      href="/contact"
-                                      onClick={() => {
-                                        setProductsDropdownOpen(false);
-                                        setActiveCategoryIndex(null);
-                                      }}
-                                      className="font-display font-bold text-[9.5px] uppercase tracking-wider text-solvorry-DEFAULT hover:text-solvorry-dark flex items-center gap-1 transition-colors group shrink-0"
-                                    >
-                                      <span>Request Quote</span>
-                                      <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                                    </Link>
+                                   <div className="mt-2.5 pt-2 border-t border-neutral-100 flex items-center justify-between text-xs">
+                                     <span className="text-[9px] text-neutral-500 font-body truncate">
+                                       Need custom OEM dimensions?
+                                     </span>
+                                    <div className="flex items-center gap-3 shrink-0">
+                                      <Link
+                                        href="/products"
+                                        onClick={() => {
+                                          setProductsDropdownOpen(false);
+                                          setActiveCategoryIndex(null);
+                                        }}
+                                        className="font-display font-bold text-[9.5px] uppercase tracking-wider text-neutral-500 hover:text-solvorry-DEFAULT flex items-center gap-1 transition-colors group"
+                                      >
+                                        <span>View Product Page</span>
+                                      </Link>
+                                      <Link
+                                        href="/contact"
+                                        onClick={() => {
+                                          setProductsDropdownOpen(false);
+                                          setActiveCategoryIndex(null);
+                                        }}
+                                        className="font-display font-bold text-[9.5px] uppercase tracking-wider text-solvorry-DEFAULT hover:text-solvorry-dark flex items-center gap-1 transition-colors group"
+                                      >
+                                        <span>Request Quote</span>
+                                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                                      </Link>
+                                    </div>
                                   </div>
                                 </div>
                               )}
@@ -933,10 +945,18 @@ export default function Navbar() {
                         />
                       </button>
 
-                      {/* Accordion content with all products and subcategories */}
-                      {mobileProductsOpen && (
-                        <div className="pl-3 pr-2 py-3 space-y-6 bg-white/5 rounded-lg my-1 animate-in fade-in duration-200">
-                          {PRODUCT_CATEGORIES.map((cat) => (
+                       {/* Accordion content with all products and subcategories */}
+                       {mobileProductsOpen && (
+                         <div className="pl-3 pr-2 py-3 space-y-6 bg-white/5 rounded-lg my-1 animate-in fade-in duration-200">
+                           <Link
+                             href="/products"
+                             onClick={() => setMobileMenuOpen(false)}
+                             className="flex items-center justify-between rounded-lg border border-solvorry-light/30 bg-solvorry-DEFAULT/20 px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-solvorry-light"
+                           >
+                             <span>Open LDA II product page</span>
+                             <ArrowRight className="w-3.5 h-3.5" />
+                           </Link>
+                           {PRODUCT_CATEGORIES.map((cat) => (
                             <div key={cat.id} className="space-y-2">
                               <div className="font-display font-bold text-xs uppercase tracking-wider text-solvorry-light">
                                 {cat.title}
