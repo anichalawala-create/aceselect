@@ -7,13 +7,17 @@ import {
   CheckCircle2,
   ChevronDown,
   ExternalLink,
+  Eye,
   FilePlus2,
   Image as ImageIcon,
   Loader2,
+  Monitor,
   PanelsTopLeft,
   Plus,
   RefreshCw,
+  Smartphone,
   Search,
+  Tablet,
   Trash2,
   Upload,
   Video,
@@ -22,6 +26,7 @@ import {
 
 type ContentType = "text" | "image" | "video";
 type FilterType = "all" | ContentType;
+type PreviewDevice = "desktop" | "tablet" | "mobile";
 
 interface ContentItem {
   id?: string | number;
@@ -50,6 +55,12 @@ const PAGES = [
 const inputClass =
   "w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-800 outline-none transition focus:border-[#283A97] focus:ring-2 focus:ring-[#283A97]/15";
 const labelClass = "mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-neutral-500";
+
+const PREVIEW_DEVICES: Array<{ id: PreviewDevice; label: string; icon: typeof Monitor; width: string }> = [
+  { id: "desktop", label: "Desktop", icon: Monitor, width: "100%" },
+  { id: "tablet", label: "Tablet", icon: Tablet, width: "min(100%, 768px)" },
+  { id: "mobile", label: "Mobile", icon: Smartphone, width: "min(100%, 390px)" },
+];
 
 function makeClientId() {
   return `content-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -94,6 +105,16 @@ function typeLabel(type: ContentType) {
   return type === "text" ? "Text" : type === "image" ? "Image" : "Video";
 }
 
+function previewText(items: EditorItem[], keys: string[], fallback: string) {
+  const item = items.find((entry) => entry.is_active && keys.includes(entry.content_key));
+  return item ? item.value : fallback;
+}
+
+function previewMedia(items: EditorItem[], keys: string[]) {
+  const item = items.find((entry) => entry.is_active && keys.includes(entry.content_key));
+  return item ? item.media_url || item.value : "";
+}
+
 function TypeIcon({ type }: { type: ContentType }) {
   return type === "text" ? (
     <FilePlus2 className="h-4 w-4" />
@@ -115,6 +136,10 @@ export default function AdminPageContent() {
   const [saving, setSaving] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("desktop");
+  const [previewVersion, setPreviewVersion] = useState(0);
+  const [contentSource, setContentSource] = useState<"supabase" | "local" | null>(null);
+  const [sourceWarning, setSourceWarning] = useState<string | null>(null);
 
   const dirty = serializeItems(items) !== serializeItems(savedItems) || deletedItems.length > 0;
 
@@ -130,11 +155,15 @@ export default function AdminPageContent() {
       const nextItems = (Array.isArray(json.data) ? json.data : []).map((item: Partial<ContentItem>, index: number) =>
         normalizeItem(item, slug, index),
       );
+      setContentSource(json.source === "supabase" ? "supabase" : "local");
+      setSourceWarning(typeof json.warning === "string" ? json.warning : null);
       setItems(nextItems);
       setSavedItems(nextItems);
       setDeletedItems([]);
     } catch (error) {
       setFeedback({ type: "error", text: error instanceof Error ? error.message : "Could not load page content." });
+      setContentSource(null);
+      setSourceWarning(null);
       setItems([]);
       setSavedItems([]);
     } finally {
@@ -221,14 +250,16 @@ export default function AdminPageContent() {
         label: editorItem.label.trim(),
         value: editorItem.content_type === "text" ? editorItem.value : editorItem.media_url || editorItem.value,
       }));
-      const response = await fetch("/api/admin/page-content", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: payloadItems }),
-      });
-      const json = await response.json();
-      if (!response.ok || !json.success) {
-        throw new Error(json.error || "Could not save page content.");
+      if (payloadItems.length > 0) {
+        const response = await fetch("/api/admin/page-content", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: payloadItems }),
+        });
+        const json = await response.json();
+        if (!response.ok || !json.success) {
+          throw new Error(json.error || "Could not save page content.");
+        }
       }
 
       for (const item of deletedItems) {
@@ -357,7 +388,7 @@ export default function AdminPageContent() {
               <ChevronDown className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-neutral-400" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="rounded-lg bg-[#F0F2F8] px-4 py-2.5">
               <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">Fields</p>
               <p className="mt-0.5 text-lg font-bold text-neutral-900">{items.length}</p>
@@ -370,9 +401,15 @@ export default function AdminPageContent() {
               <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Status</p>
               <p className="mt-0.5 text-sm font-bold text-amber-800">{dirty ? "Unsaved changes" : "All changes saved"}</p>
             </div>
+            </div>
           </div>
-        </div>
       </section>
+
+      <div className={`flex flex-wrap items-center gap-2 rounded-xl border px-4 py-3 text-xs ${contentSource === "supabase" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : contentSource === "local" ? "border-amber-200 bg-amber-50 text-amber-800" : "border-neutral-200 bg-white text-neutral-500"}`}>
+        <span className={`h-2 w-2 rounded-full ${contentSource === "supabase" ? "bg-emerald-500" : contentSource === "local" ? "bg-amber-500" : "bg-neutral-300"}`} />
+        <span className="font-bold">{contentSource === "supabase" ? "Cloud CMS connected" : contentSource === "local" ? "Local fallback cache" : "Checking CMS connection"}</span>
+        <span className="text-current/75">{sourceWarning || (contentSource === "supabase" ? "Changes are reading from Supabase." : contentSource === "local" ? "Save after restoring Supabase before client handoff." : "Loading the selected page content source...")}</span>
+      </div>
 
       <section className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
@@ -413,47 +450,232 @@ export default function AdminPageContent() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="rounded-xl border border-neutral-200 bg-white py-20 text-center shadow-xs">
-          <Loader2 className="mx-auto h-7 w-7 animate-spin text-[#283A97]" />
-          <p className="mt-3 text-sm font-medium text-neutral-500">Loading page content...</p>
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.72fr)] xl:items-start">
+        <div className="min-w-0">
+          {loading ? (
+            <div className="rounded-xl border border-neutral-200 bg-white py-20 text-center shadow-xs">
+              <Loader2 className="mx-auto h-7 w-7 animate-spin text-[#283A97]" />
+              <p className="mt-3 text-sm font-medium text-neutral-500">Loading page content...</p>
+            </div>
+          ) : visibleItems.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-neutral-300 bg-white py-16 text-center shadow-xs">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#283A97]/10 text-[#283A97]"><FilePlus2 className="h-6 w-6" /></div>
+              <h2 className="mt-4 text-base font-bold text-neutral-900">{items.length ? "No matching fields" : "No content fields yet"}</h2>
+              <p className="mx-auto mt-1 max-w-md text-sm text-neutral-500">{items.length ? "Try a different search or filter." : "Start with a text field or a media field to build this page's editable content."}</p>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {(["text", "image", "video"] as ContentType[]).map((type) => groups[type].length > 0 && (
+                <section key={type} className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xs">
+                  <div className="flex items-center gap-3 border-b border-neutral-100 bg-neutral-50/70 px-5 py-3.5">
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${type === "text" ? "bg-violet-100 text-violet-700" : type === "image" ? "bg-sky-100 text-sky-700" : "bg-orange-100 text-orange-700"}`}>
+                      <TypeIcon type={type} />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold text-neutral-900">{typeLabel(type)} fields</h2>
+                      <p className="text-[11px] text-neutral-500">{groups[type].length} editable {groups[type].length === 1 ? "field" : "fields"}</p>
+                    </div>
+                  </div>
+                  <div className="divide-y divide-neutral-100">
+                    {groups[type].map((item) => (
+                      <ContentRow
+                        key={item.clientId}
+                        item={item}
+                        uploading={uploadingId === item.clientId}
+                        onChange={updateItem}
+                        onRemove={removeItem}
+                        onUpload={uploadMedia}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
         </div>
-      ) : visibleItems.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-neutral-300 bg-white py-16 text-center shadow-xs">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#283A97]/10 text-[#283A97]"><FilePlus2 className="h-6 w-6" /></div>
-          <h2 className="mt-4 text-base font-bold text-neutral-900">{items.length ? "No matching fields" : "No content fields yet"}</h2>
-          <p className="mx-auto mt-1 max-w-md text-sm text-neutral-500">{items.length ? "Try a different search or filter." : "Start with a text field or a media field to build this page's editable content."}</p>
+
+        <LivePreview
+          key={`${selectedPage}-${previewVersion}`}
+          items={items}
+          page={selectedPageInfo}
+          device={previewDevice}
+          onDeviceChange={setPreviewDevice}
+          onRefresh={() => setPreviewVersion((current) => current + 1)}
+        />
+      </div>
+
+      <div className="sticky bottom-3 z-20 -mx-2 flex items-center gap-2 rounded-xl border border-neutral-200 bg-white/95 p-2 shadow-lg backdrop-blur lg:hidden">
+        <div className="min-w-0 flex-1 px-2">
+          <p className="truncate text-xs font-bold text-neutral-800">{dirty ? "Unsaved changes" : "All changes saved"}</p>
+          <p className="text-[10px] text-neutral-500">{totalActive} visible field{totalActive === 1 ? "" : "s"}</p>
         </div>
-      ) : (
-        <div className="space-y-5">
-          {(["text", "image", "video"] as ContentType[]).map((type) => groups[type].length > 0 && (
-            <section key={type} className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xs">
-              <div className="flex items-center gap-3 border-b border-neutral-100 bg-neutral-50/70 px-5 py-3.5">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${type === "text" ? "bg-violet-100 text-violet-700" : type === "image" ? "bg-sky-100 text-sky-700" : "bg-orange-100 text-orange-700"}`}>
-                  <TypeIcon type={type} />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-neutral-900">{typeLabel(type)} fields</h2>
-                  <p className="text-[11px] text-neutral-500">{groups[type].length} editable {groups[type].length === 1 ? "field" : "fields"}</p>
-                </div>
-              </div>
-              <div className="divide-y divide-neutral-100">
-                {groups[type].map((item) => (
-                  <ContentRow
-                    key={item.clientId}
-                    item={item}
-                    uploading={uploadingId === item.clientId}
-                    onChange={updateItem}
-                    onRemove={removeItem}
-                    onUpload={uploadMedia}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
+        <button
+          type="button"
+          onClick={resetChanges}
+          disabled={!dirty || saving}
+          className="rounded-lg border border-neutral-200 px-3 py-2 text-xs font-bold text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Reset
+        </button>
+        <button
+          type="button"
+          onClick={() => void saveAll()}
+          disabled={!dirty || saving}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#283A97] px-3.5 py-2 text-xs font-bold text-white transition hover:bg-[#1e2d7a] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+          {saving ? "Saving" : "Save"}
+        </button>
+      </div>
     </div>
+  );
+}
+
+function LivePreview({
+  items,
+  page,
+  device,
+  onDeviceChange,
+  onRefresh,
+}: {
+  items: EditorItem[];
+  page: (typeof PAGES)[number];
+  device: PreviewDevice;
+  onDeviceChange: (device: PreviewDevice) => void;
+  onRefresh: () => void;
+}) {
+  const headline = previewText(items, ["hero.headline", "story.headline"], `${page.label.toUpperCase()} CONTENT PREVIEW`);
+  const headlineLine1 = previewText(items, ["hero.headline_line1"], "ENGINEERED FOR INDIA.");
+  const headlineLine2 = previewText(items, ["hero.headline_line2"], "DESIGNED FOR EVERY APPLICATION.");
+  const intro = previewText(items, ["hero.subheadline", "hero.intro", "products.intro"], "A live look at the content currently being edited in this draft.");
+  const eyebrow = previewText(items, ["hero.eyebrow", "story.eyebrow"], `${page.label.toUpperCase()} / LIVE PREVIEW`);
+  const mediaUrl = previewMedia(items, ["hero.poster", "hero.image", "about.image", "story.image"]);
+  const heroHeadline = page.slug === "home" && (headlineLine1 || headlineLine2)
+    ? `${headlineLine1}${headlineLine1 && headlineLine2 ? " " : ""}${headlineLine2}`
+    : headline;
+  const activeItems = items.filter((item) => item.is_active).sort((first, second) => first.sort_order - second.sort_order).slice(0, 3);
+  const frameIsMobile = device === "mobile";
+
+  return (
+    <aside className="min-w-0 xl:sticky xl:top-6" aria-label="Live page preview">
+      <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+        <div className="border-b border-neutral-100 px-4 py-4 sm:px-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#283A97]">
+                <Eye className="h-4 w-4" />
+                Live preview
+              </div>
+              <p className="mt-1 text-xs text-neutral-500">Draft updates appear here before you save.</p>
+            </div>
+            <div className="flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[10px] font-bold text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              {items.length ? `${items.length} fields` : "Empty draft"}
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center gap-1 rounded-xl border border-neutral-200 bg-neutral-50 p-1">
+            {PREVIEW_DEVICES.map(({ id, label, icon: DeviceIcon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onDeviceChange(id)}
+                aria-pressed={device === id}
+                className={`inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[11px] font-bold transition ${device === id ? "bg-white text-[#283A97] shadow-sm" : "text-neutral-500 hover:bg-white/70 hover:text-neutral-700"}`}
+              >
+                <DeviceIcon className="h-3.5 w-3.5" />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-[#eef1f8] p-3 sm:p-5">
+          <div className="mb-3 flex items-center justify-between gap-2 text-[10px] font-semibold text-neutral-500">
+            <span className="truncate">{device === "desktop" ? "1440px canvas" : device === "tablet" ? "768px canvas" : "390px canvas"}</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onRefresh}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[#283A97] transition hover:bg-white hover:shadow-sm"
+                title="Refresh preview"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Refresh
+              </button>
+              <a
+                href={page.path}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[#283A97] transition hover:bg-white hover:shadow-sm"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Open page
+              </a>
+            </div>
+          </div>
+
+          <div className="mx-auto transition-[width] duration-300" style={{ width: PREVIEW_DEVICES.find((entry) => entry.id === device)?.width }}>
+            <div className={`overflow-hidden border border-neutral-300 bg-white shadow-[0_18px_45px_rgba(40,58,151,0.14)] ${frameIsMobile ? "rounded-[1.75rem] border-[5px] border-neutral-800" : device === "tablet" ? "rounded-2xl border-[4px] border-neutral-700" : "rounded-lg"}`}>
+              <div className="flex h-7 items-center gap-1 border-b border-neutral-200 bg-neutral-100 px-3">
+                <span className="h-2 w-2 rounded-full bg-red-300" />
+                <span className="h-2 w-2 rounded-full bg-amber-300" />
+                <span className="h-2 w-2 rounded-full bg-emerald-300" />
+                <span className="ml-2 min-w-0 flex-1 truncate rounded bg-white px-2 py-0.5 text-[8px] text-neutral-400">aceselect.com{page.path}</span>
+              </div>
+
+              <div className="max-h-[620px] overflow-y-auto bg-white">
+                <div className="flex items-center justify-between border-b border-white/10 bg-[#0b0f2b] px-4 py-3 text-white">
+                  <span className="text-[11px] font-black tracking-[0.15em]">ACE SELECT</span>
+                  <div className={`${device === "desktop" ? "flex" : "hidden"} items-center gap-3 text-[8px] font-semibold uppercase tracking-wider text-white/60`}>
+                    <span>Solutions</span><span>Projects</span><span>Contact</span>
+                  </div>
+                  {frameIsMobile && <span className="text-lg leading-none text-white/70">☰</span>}
+                </div>
+
+                <section className={`relative overflow-hidden bg-[#0b0f2b] px-5 py-12 text-white ${device !== "mobile" ? "sm:px-8 sm:py-16" : ""}`}>
+                  {mediaUrl && <img src={mediaUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-25" />}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f2b]/95 via-[#0b0f2b]/85 to-[#283A97]/70" />
+                  <div className="relative">
+                    <p className="max-w-full text-[8px] font-bold uppercase tracking-[0.2em] text-[#9eafff]">{eyebrow}</p>
+                    <h2 className={`mt-4 max-w-2xl whitespace-pre-line text-2xl font-black leading-[1.08] tracking-tight ${device !== "mobile" ? "sm:text-4xl" : ""}`}>{heroHeadline}</h2>
+                    <p className={`mt-4 max-w-xl whitespace-pre-line text-[11px] leading-relaxed text-white/75 ${device !== "mobile" ? "sm:text-sm" : ""}`}>{intro}</p>
+                    <span className="mt-6 inline-flex rounded bg-[#4a60d4] px-3 py-2 text-[9px] font-bold uppercase tracking-wider">Explore our work</span>
+                  </div>
+                </section>
+
+                <section className={`space-y-6 px-5 py-8 ${device !== "mobile" ? "sm:px-8 sm:py-10" : ""}`}>
+                  <div>
+                    <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-[#283A97]">{page.label} / CONTENT</p>
+                    <h3 className={`mt-2 whitespace-pre-line text-xl font-black leading-tight text-neutral-900 ${device !== "mobile" ? "sm:text-2xl" : ""}`}>{previewText(items, ["about.headline", "story.headline", "products.headline"], `Shape the ${page.label.toLowerCase()} experience.`)}</h3>
+                  </div>
+                  <div className={`grid gap-3 ${frameIsMobile ? "grid-cols-1" : "grid-cols-2"}`}>
+                    {activeItems.length > 0 ? activeItems.map((item) => (
+                      <div key={item.clientId} className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+                        <p className="truncate text-[8px] font-bold uppercase tracking-wider text-neutral-400">{item.label}</p>
+                        {item.content_type === "image" && (item.media_url || item.value) ? (
+                          <img src={item.media_url || item.value} alt={item.alt_text || ""} className="mt-2 h-20 w-full rounded object-cover" />
+                        ) : item.content_type === "video" && (item.media_url || item.value) ? (
+                          <div className="mt-2 flex h-20 items-center justify-center rounded bg-[#0b0f2b] text-[9px] font-bold text-white/70">Video content</div>
+                        ) : (
+                          <p className="mt-2 line-clamp-3 whitespace-pre-line text-[10px] leading-relaxed text-neutral-600">{item.value || "Empty text field"}</p>
+                        )}
+                      </div>
+                    )) : (
+                      <div className="col-span-full rounded-lg border border-dashed border-neutral-300 px-3 py-6 text-center text-[10px] text-neutral-400">Add content fields to populate this preview.</div>
+                    )}
+                  </div>
+                </section>
+
+                <footer className={`bg-[#f7f8fa] px-5 py-5 text-[9px] text-neutral-400 ${device !== "mobile" ? "sm:px-8" : ""}`}>
+                  <span className="font-bold uppercase tracking-wider text-neutral-600">ACE SELECT</span> · Responsive content preview
+                </footer>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 }
 

@@ -10,6 +10,7 @@
 
 import fs from "fs";
 import path from "path";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { isSupabaseConfigured, createSupabaseServerClient, createSupabaseAdminClient } from "@/lib/supabase";
 import type {
   HeroContent,
@@ -91,7 +92,7 @@ export function writePageContentCache(rows: PageContent[]): void {
 // ================================================================
 async function fetchFromDB<T>(
   tableName: string,
-  query: (supabase: any) => Promise<{ data: T | null; error: unknown }>
+  query: (supabase: SupabaseClient) => Promise<{ data: T | null; error: unknown }>
 ): Promise<T | null> {
   if (!isSupabaseConfigured()) return null;
   
@@ -103,15 +104,64 @@ async function fetchFromDB<T>(
       supabase = createSupabaseServerClient();
     }
     const { data, error } = await query(supabase);
-    if (error || !data) {
+    if (error) {
+      const message = error instanceof Error
+        ? error.message
+        : typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message: unknown }).message)
+          : String(error);
+      console.warn(`[CMS] Supabase read failed for ${tableName}: ${message}`);
+      return null;
+    }
+    if (!data) {
       return null;
     }
     if (Array.isArray(data) && data.length === 0) {
       return null;
     }
     return data;
-  } catch {
+  } catch (error) {
+    console.warn(
+      `[CMS] Supabase read failed for ${tableName}:`,
+      error instanceof Error ? error.message : String(error),
+    );
     return null;
+  }
+}
+
+/**
+ * Page content needs to distinguish a successful empty remote result from a
+ * failed remote read. An empty result is meaningful: an administrator may
+ * intentionally hide every override for a page.
+ */
+async function fetchPageContentFromDB(pageSlug: string): Promise<{ rows: PageContent[] | null; remoteAvailable: boolean }> {
+  if (!isSupabaseConfigured()) return { rows: null, remoteAvailable: false };
+
+  try {
+    let supabase;
+    try {
+      supabase = createSupabaseAdminClient();
+    } catch {
+      supabase = createSupabaseServerClient();
+    }
+    const { data, error } = await supabase
+      .from("cms_page_content")
+      .select("*")
+      .eq("page_slug", pageSlug)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      console.warn(`[CMS] Supabase read failed for cms_page_content: ${error.message}`);
+      return { rows: null, remoteAvailable: false };
+    }
+    return { rows: (data || []) as PageContent[], remoteAvailable: true };
+  } catch (error) {
+    console.warn(
+      "[CMS] Supabase read failed for cms_page_content:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return { rows: null, remoteAvailable: false };
   }
 }
 
@@ -123,18 +173,8 @@ async function fetchFromDB<T>(
  * Supabase is preferred; an empty/error response falls back to the local cache.
  */
 export async function getPageContent(pageSlug: string): Promise<PageContentMap> {
-  const data = await fetchFromDB<PageContent[]>("cms_page_content", async (supabase) =>
-    supabase
-      .from("cms_page_content")
-      .select("*")
-      .eq("page_slug", pageSlug)
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true })
-  );
-
-  const rows = data && data.length > 0
-    ? data
-    : readPageContentCache().filter((row) => row.page_slug === pageSlug && row.is_active !== false);
+  const remote = await fetchPageContentFromDB(pageSlug);
+  const rows = remote.rows ?? readPageContentCache().filter((row) => row.page_slug === pageSlug && row.is_active !== false);
 
   return rows.reduce<PageContentMap>((map, row) => {
     if (row?.content_key) map[row.content_key] = row;
@@ -197,13 +237,13 @@ export async function getPageSEO(slug: string): Promise<PageSEO | null> {
     supabase.from("page_seo").select("*").eq("page_slug", slug).maybeSingle()
   );
   if (data) return data;
-  const seoCache = readCacheSection<any[]>("seo", []);
+  const seoCache = readCacheSection<Array<{ id?: string; slug?: string; title?: string; description?: string; keywords?: string }>>("seo", []);
   const matched = seoCache.find((s) => s.slug === slug);
   if (matched) {
     return {
       id: matched.id || slug,
-      page_slug: matched.slug,
-      title: matched.title,
+      page_slug: matched.slug || slug,
+      title: matched.title || slug,
       meta_description: matched.description || "",
       keywords: matched.keywords || "",
       updated_at: new Date().toISOString(),
@@ -243,8 +283,8 @@ export async function getHeroContent(): Promise<HeroContent> {
       ...FALLBACK_HERO,
       ...cacheHero,
       ...data,
-      background_video_url: (data as any).background_video_url || cacheHero.background_video_url || "/home-hero.mp4",
-      poster_url: (data as any).poster_url || cacheHero.poster_url || "/home-hero-poster.jpg",
+      background_video_url: data.background_video_url || cacheHero.background_video_url || "/home-hero.mp4",
+      poster_url: data.poster_url || cacheHero.poster_url || "/home-hero-poster.jpg",
     };
   }
   return { ...FALLBACK_HERO, ...cacheHero };
@@ -269,8 +309,9 @@ const FALLBACK_ABOUT: HomeAboutSection = {
 };
 
 export async function getHomeAbout(): Promise<HomeAboutSection> {
-  const cacheAbout = readCacheSection<any>("about", FALLBACK_ABOUT);
-  const data = await fetchFromDB<any>("home_about", async (supabase) =>
+  type HomeAboutCache = HomeAboutSection & { body1?: string; body2?: string };
+  const cacheAbout = readCacheSection<HomeAboutCache>("about", FALLBACK_ABOUT);
+  const data = await fetchFromDB<HomeAboutCache>("home_about", async (supabase) =>
     supabase.from("home_about").select("*").limit(1).maybeSingle()
   );
   const raw = data || cacheAbout || FALLBACK_ABOUT;
@@ -343,7 +384,7 @@ export async function getPanIndiaStats(): Promise<PanIndiaStat[]> {
     supabase.from("pan_india_stats").select("*").eq("is_active", true).order("sort_order")
   );
   if (data && data.length > 0) return data;
-  const fromCache = readCacheSection<any[]>("pan_india", FALLBACK_PAN_INDIA);
+  const fromCache = readCacheSection<PanIndiaStat[]>("pan_india", FALLBACK_PAN_INDIA);
   return fromCache.map((item, idx) => ({
     id: item.id || String(idx + 1),
     value: item.value,
@@ -528,8 +569,8 @@ const FALLBACK_COMPANY: CompanyPage = {
 };
 
 export async function getCompanyPage(): Promise<CompanyPage> {
-  const cacheCompany = readCacheSection<any>("company", FALLBACK_COMPANY);
-  const data = await fetchFromDB<any>("company_page", async (supabase) =>
+  const cacheCompany = readCacheSection<CompanyPage>("company", FALLBACK_COMPANY);
+  const data = await fetchFromDB<CompanyPage>("company_page", async (supabase) =>
     supabase.from("company_page").select("*").limit(1).maybeSingle()
   );
   const raw = data || cacheCompany || FALLBACK_COMPANY;

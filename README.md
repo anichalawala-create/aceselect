@@ -26,9 +26,11 @@ Editor:
 
 1. `supabase/migrations/20261002_ace_select_cms.sql`
 2. `supabase/migrations/20261016_page_content.sql`
+3. `supabase/migrations/20261017_page_content_hardening.sql`
 
-The second migration is idempotent and seeds editable fields for Home, Who We
-Are, Services, Industries, Projects, and Contact.
+The page-content migrations are idempotent. They seed editable fields for
+Home, Who We Are, Services, Industries, Projects, and Contact, then add
+production-safe key and media URL constraints.
 
 ## Development
 
@@ -45,6 +47,7 @@ rows are persisted to Supabase and the local cache fallback.
 
 ```bash
 npm test       # offline typecheck + CMS cache validation
+npm run lint:cms # CMS-specific lint
 npm run lint   # repository lint
 npm run build
 ```

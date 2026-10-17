@@ -1,4 +1,4 @@
-.PHONY: test build dev start lint
+.PHONY: test build dev start lint lint-cms
 
 test:
 	npm test
@@ -14,3 +14,6 @@ start:
 
 lint:
 	npm run lint
+
+lint-cms:
+	npm run lint:cms

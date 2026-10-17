@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:cms": "eslint src/app/admin/content/page.tsx src/app/api/admin/page-content/route.ts src/lib/cms-service.ts scripts/validate-cms.mjs",
     "typecheck": "tsc --noEmit",
     "validate:cms": "node scripts/validate-cms.mjs",
     "test": "npm run typecheck && npm run validate:cms"
