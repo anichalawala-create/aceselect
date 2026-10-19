@@ -14,13 +14,29 @@ export interface AdminUser {
   supabase_auth_id?: string;
 }
 
+export class SupabaseAdminError extends Error {
+  readonly status = 503;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "SupabaseAdminError";
+  }
+}
+
+export function isSupabaseAdminError(error: unknown): error is SupabaseAdminError {
+  return error instanceof SupabaseAdminError;
+}
+
 function getEnvVar(key: string): string {
-  if (process.env[key]) return process.env[key]!;
+  const configuredValue = process.env[key]?.trim();
+  if (configuredValue) return configuredValue.replace(/^(['"])(.*)\1$/, "$2");
   try {
     const envPath = path.resolve(process.cwd(), ".env.local");
     if (fs.existsSync(envPath)) {
       const match = fs.readFileSync(envPath, "utf-8").match(new RegExp(`^${key}=(.*)$`, "m"));
-      if (match && match[1]?.trim()) return match[1].trim();
+      if (match && match[1]?.trim()) {
+        return match[1].trim().replace(/^(['"])(.*)\1$/, "$2");
+      }
     }
   } catch {}
   return "";
@@ -28,8 +44,41 @@ function getEnvVar(key: string): string {
 
 export function getSupabaseAdmin() {
   const url = getEnvVar("NEXT_PUBLIC_SUPABASE_URL");
-  const key = getEnvVar("SUPABASE_SERVICE_ROLE_KEY") || getEnvVar("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  if (!url) {
+    throw new SupabaseAdminError(
+      "Supabase is not configured: set NEXT_PUBLIC_SUPABASE_URL in .env.local or the deployment environment."
+    );
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      throw new Error("unsupported protocol");
+    }
+  } catch {
+    throw new SupabaseAdminError(
+      "Supabase is misconfigured: NEXT_PUBLIC_SUPABASE_URL must be a valid http(s) URL."
+    );
+  }
+
+  const key = getEnvVar("SUPABASE_SERVICE_ROLE_KEY");
+  if (!key) {
+    throw new SupabaseAdminError(
+      "Supabase admin access is not configured: set SUPABASE_SERVICE_ROLE_KEY. Admin APIs cannot use the public anon key."
+    );
+  }
+
   return createClient(url, key, { auth: { persistSession: false } });
+}
+
+function isInvalidSessionError(error: { status?: number; code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  const message = error.message?.toLowerCase() || "";
+  if (/api\s*key|apikey|configuration|network/.test(message)) return false;
+  return (
+    error.status === 401 ||
+    /invalid (jwt|token|session)|jwt expired|session not found|user not found/.test(message)
+  );
 }
 
 export async function getCurrentAdminUser(): Promise<AdminUser | null> {
@@ -41,16 +90,36 @@ export async function getCurrentAdminUser(): Promise<AdminUser | null> {
     // Verify token with Supabase
     const supabase = getSupabaseAdmin();
     const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (error || !user || !user.email) return null;
+    if (error) {
+      if (isInvalidSessionError(error)) return null;
+      console.error("Supabase session verification error:", error);
+      throw new SupabaseAdminError(
+        "Unable to verify the admin session with Supabase. Check the Supabase URL and service role key."
+      );
+    }
+    if (!user || !user.email) return null;
 
     // Fetch user details from admin_users
-    const { data: adminRecord } = await supabase
+    const { data: adminRecord, error: adminError } = await supabase
       .from("admin_users")
       .select("*")
-      .eq("email", user.email)
-      .single();
+      .eq("email", user.email.toLowerCase())
+      .maybeSingle();
+
+    if (adminError) {
+      console.error("Admin account lookup error:", adminError);
+      throw new SupabaseAdminError(
+        "Unable to verify the administrator account. Check that the admin_users table exists and Supabase is reachable."
+      );
+    }
 
     if (!adminRecord || !adminRecord.is_active) return null;
+
+    // A stale auth id must not be able to authenticate by email alone. A null
+    // value is allowed for legacy rows and is linked during the next login.
+    if (adminRecord.supabase_auth_id && adminRecord.supabase_auth_id !== user.id) {
+      return null;
+    }
 
     return {
       id: adminRecord.id,
@@ -63,6 +132,7 @@ export async function getCurrentAdminUser(): Promise<AdminUser | null> {
       supabase_auth_id: user.id,
     };
   } catch (err) {
+    if (isSupabaseAdminError(err)) throw err;
     console.error("getCurrentAdminUser error:", err);
     return null;
   }

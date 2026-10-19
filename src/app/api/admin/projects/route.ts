@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/auth";
+import { getCurrentAdminUser, getSupabaseAdmin, isSupabaseAdminError } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
@@ -35,6 +35,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const currentUser = await getCurrentAdminUser();
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
+    }
+
     const supabase = getSupabaseAdmin();
     const body = await req.json();
 
@@ -88,12 +93,20 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, project: data });
   } catch (error: unknown) {
+    if (isSupabaseAdminError(error)) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request) {
   try {
+    const currentUser = await getCurrentAdminUser();
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized. Please log in." }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
@@ -110,6 +123,9 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true, message: "Project deleted successfully." });
   } catch (error: unknown) {
+    if (isSupabaseAdminError(error)) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }

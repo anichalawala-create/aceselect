@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/auth";
+import { getCurrentAdminUser, getSupabaseAdmin, isSupabaseAdminError } from "@/lib/auth";
+import { syncHomeHeroVideoCache, syncHomeHeroVideoPageContent } from "@/lib/cms-service";
 import fs from "fs";
 import path from "path";
 
@@ -37,6 +38,11 @@ function isUuid(id: unknown): boolean {
 
 export async function GET(req: Request) {
   try {
+    const currentUser = await getCurrentAdminUser();
+    if (!currentUser) {
+      return NextResponse.json({ success: false, error: "Unauthorized. Please log in." }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const section = searchParams.get("section") || "all";
     const cache = readCache();
@@ -50,8 +56,8 @@ export async function GET(req: Request) {
           const merged = {
             ...(cache.hero || {}),
             ...dbHero,
-            background_video_url: cache.hero?.background_video_url || "/videos/homepage-hero.mp4",
-            poster_url: cache.hero?.poster_url || "",
+            background_video_url: dbHero.background_video_url || cache.hero?.background_video_url || "/videos/homepage-hero.mp4",
+            poster_url: dbHero.poster_url || cache.hero?.poster_url || "",
           };
           return NextResponse.json({ success: true, data: merged });
         }
@@ -249,13 +255,21 @@ export async function GET(req: Request) {
 
     // Default: return all cache
     return NextResponse.json({ success: true, data: cache });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || String(error) }, { status: 500 });
+  } catch (error: unknown) {
+    if (isSupabaseAdminError(error)) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
   try {
+    const currentUser = await getCurrentAdminUser();
+    if (!currentUser) {
+      return NextResponse.json({ success: false, error: "Unauthorized. Please log in." }, { status: 401 });
+    }
+
     const body = await req.json();
     const { section, data } = body;
 
@@ -282,13 +296,26 @@ export async function POST(req: Request) {
         bottom_tagline: data.bottom_tagline,
         vertical_labels: data.vertical_labels,
         is_active: data.is_active !== false,
+        ...(typeof data.background_video_url === "string"
+          ? { background_video_url: data.background_video_url }
+          : {}),
+        ...(typeof data.poster_url === "string" ? { poster_url: data.poster_url } : {}),
       };
+
+      // The public homepage resolves this page-content row before hero_content.
+      // Keep both CMS paths pointed at the same saved video.
+      if (typeof data.background_video_url === "string") {
+        syncHomeHeroVideoCache(data.background_video_url);
+      }
 
       const { data: existing } = await supabase.from("hero_content").select("id").limit(1);
       if (existing && existing.length > 0) {
         await supabase.from("hero_content").update(heroFields).eq("id", existing[0].id);
       } else {
         await supabase.from("hero_content").insert(heroFields);
+      }
+      if (typeof data.background_video_url === "string") {
+        await syncHomeHeroVideoPageContent(supabase, data.background_video_url);
       }
     } else if (section === "about") {
       const aboutFields = {
@@ -534,12 +561,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: `Section '${section}' saved successfully.` });
   } catch (error: any) {
     console.error("Error saving CMS content:", error);
+    if (isSupabaseAdminError(error)) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ success: false, error: error.message || String(error) }, { status: 500 });
   }
 }
 
 export async function DELETE(req: Request) {
   try {
+    const currentUser = await getCurrentAdminUser();
+    if (!currentUser) {
+      return NextResponse.json({ success: false, error: "Unauthorized. Please log in." }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const section = searchParams.get("section");
     const id = searchParams.get("id");
@@ -578,6 +613,9 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({ success: true, message: `Item deleted from ${section}` });
   } catch (error: any) {
+    if (isSupabaseAdminError(error)) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     return NextResponse.json({ success: false, error: error.message || String(error) }, { status: 500 });
   }
 }

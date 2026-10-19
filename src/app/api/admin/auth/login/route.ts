@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getSupabaseAdmin } from "@/lib/auth";
+import { getSupabaseAdmin, isSupabaseAdminError } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const email = typeof body?.email === "string" ? body.email : "";
+    const password = typeof body?.password === "string" ? body.password : "";
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return NextResponse.json(
         { error: "Email and password are required" },
         { status: 400 }
@@ -17,7 +20,7 @@ export async function POST(req: Request) {
 
     // Authenticate with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       password,
     });
 
@@ -32,23 +35,61 @@ export async function POST(req: Request) {
     const { data: adminRecord, error: adminErr } = await supabase
       .from("admin_users")
       .select("*")
-      .eq("email", email.trim().toLowerCase())
-      .single();
+      .eq("email", normalizedEmail)
+      .maybeSingle();
 
-    if (adminRecord && !adminRecord.is_active) {
+    if (adminErr) {
+      console.error("Admin authorization lookup error:", adminErr);
+      return NextResponse.json(
+        { error: "The administrator account could not be verified. Check the admin_users table and Supabase configuration." },
+        { status: 503 }
+      );
+    }
+
+    if (!adminRecord) {
+      return NextResponse.json(
+        { error: "This account is not authorized to access the administrator portal." },
+        { status: 403 }
+      );
+    }
+
+    if (!adminRecord.is_active) {
       return NextResponse.json(
         { error: "Your administrator account has been deactivated. Please contact your system administrator." },
         { status: 403 }
       );
     }
 
-    // Update last_login
-    if (adminRecord) {
-      await supabase
-        .from("admin_users")
-        .update({ last_login: new Date().toISOString() })
-        .eq("id", adminRecord.id);
+    if (adminRecord.supabase_auth_id && adminRecord.supabase_auth_id !== authData.user.id) {
+      return NextResponse.json(
+        { error: "This administrator account is linked to a different authentication identity." },
+        { status: 403 }
+      );
     }
+
+    // Older installations may have an admin row without the auth UUID. Link
+    // it only after Supabase has verified the supplied credentials.
+    if (!adminRecord.supabase_auth_id) {
+      const { error: linkError } = await supabase
+        .from("admin_users")
+        .update({ supabase_auth_id: authData.user.id })
+        .eq("id", adminRecord.id)
+        .is("supabase_auth_id", null);
+
+      if (linkError) {
+        console.error("Admin identity linking error:", linkError);
+        return NextResponse.json(
+          { error: "The administrator account could not be linked to Supabase Auth. Please contact your system administrator." },
+          { status: 503 }
+        );
+      }
+    }
+
+    // Update last_login
+    await supabase
+      .from("admin_users")
+      .update({ last_login: new Date().toISOString() })
+      .eq("id", adminRecord.id);
 
     // Set auth cookie
     const cookieStore = await cookies();
@@ -73,6 +114,9 @@ export async function POST(req: Request) {
     });
   } catch (error: unknown) {
     console.error("Login API error:", error);
+    if (isSupabaseAdminError(error)) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return NextResponse.json(
       { error: "An unexpected error occurred during authentication." },
       { status: 500 }

@@ -71,7 +71,7 @@ export default function Footer() {
   });
 
   useEffect(() => {
-    fetch("/api/admin/content?section=settings")
+    fetch("/api/site/settings")
       .then((r) => r.json())
       .then((res) => {
         if (res?.success && res?.data) {

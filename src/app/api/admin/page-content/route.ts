@@ -3,6 +3,8 @@ import { createSupabaseAdminClient, isSupabaseConfigured } from "@/lib/supabase"
 import { getCurrentAdminUser } from "@/lib/auth";
 import {
   readPageContentCache,
+  syncHomeHeroVideoCache,
+  syncHomeHeroVideoHeroContent,
   writePageContentCache,
 } from "@/lib/cms-service";
 import type { PageContent, PageContentType } from "@/types/cms";
@@ -321,6 +323,12 @@ export async function POST(req: Request) {
   if (!supabase) {
     try {
       writePageContentCache(rows);
+      const heroVideo = changedRows.find(
+        (row) => row.page_slug === "home" && row.content_key === "hero.background",
+      );
+      if (heroVideo) {
+        syncHomeHeroVideoCache(heroVideo.media_url || heroVideo.value || "");
+      }
     } catch (error) {
       return errorResponse(error instanceof Error ? error.message : "Unable to persist the local page-content cache.", 500);
     }
@@ -371,6 +379,20 @@ export async function POST(req: Request) {
   }
 
   const persistedRows = data;
+  const heroVideo = persistedRows.find(
+    (row) => row.page_slug === "home" && row.content_key === "hero.background",
+  );
+  if (heroVideo) {
+    try {
+      await syncHomeHeroVideoHeroContent(supabase, heroVideo.media_url || heroVideo.value || "");
+    } catch (error) {
+      return errorResponse(
+        "Page content was saved, but the legacy Homepage > Hero media record could not be synchronized.",
+        502,
+        { supabase_error: databaseErrorMessage(error), local_cache_persisted: false, supabase_persisted: true },
+      );
+    }
+  }
   const persistedKeys = new Set(persistedRows.map((row) => `${row.page_slug}:${row.content_key}`));
   const nextCacheRows = [
     ...currentRows.filter((row) => !persistedKeys.has(`${row.page_slug}:${row.content_key}`)),
@@ -389,6 +411,9 @@ export async function POST(req: Request) {
   );
   try {
     writePageContentCache(nextCacheRows);
+    if (heroVideo) {
+      syncHomeHeroVideoCache(heroVideo.media_url || heroVideo.value || "");
+    }
   } catch (error) {
     return errorResponse(
       "Page content was saved to Supabase, but the local cache could not be updated.",

@@ -19,6 +19,11 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { isVideoUrl } from "@/components/admin/MediaUploader";
+import {
+  ADMIN_UPLOAD_MAX_FILES,
+  ADMIN_UPLOAD_MAX_FILE_SIZE,
+  ADMIN_UPLOAD_MAX_TOTAL_SIZE,
+} from "@/lib/upload-limits";
 
 type MediaType = "all" | "image" | "video" | "document";
 
@@ -93,15 +98,31 @@ export default function AdminMediaPage() {
   async function handleFilesUpload(files: FileList | File[]) {
     if (!files || files.length === 0) return;
 
+    const selectedFiles = Array.from(files);
+    if (selectedFiles.length > ADMIN_UPLOAD_MAX_FILES) {
+      alert(`You can upload up to ${ADMIN_UPLOAD_MAX_FILES} files at a time.`);
+      return;
+    }
+    const oversizedFile = selectedFiles.find((file) => file.size > ADMIN_UPLOAD_MAX_FILE_SIZE);
+    if (oversizedFile) {
+      alert(`"${oversizedFile.name}" exceeds the 50MB per-file limit.`);
+      return;
+    }
+    const totalSize = selectedFiles.reduce((total, file) => total + file.size, 0);
+    if (totalSize > ADMIN_UPLOAD_MAX_TOTAL_SIZE) {
+      alert("The total upload size cannot exceed 200MB.");
+      return;
+    }
+
     setUploading(true);
-    setUploadStatus(`Uploading ${files.length} file${files.length > 1 ? "s" : ""}...`);
+    setUploadStatus(`Uploading ${selectedFiles.length} file${selectedFiles.length > 1 ? "s" : ""}...`);
 
     const formData = new FormData();
     formData.append("bucket", "aceselect-media");
     formData.append("folder", folder === "All" ? "general" : folder);
 
-    for (let i = 0; i < files.length; i++) {
-      formData.append("files", files[i]);
+    for (const file of selectedFiles) {
+      formData.append("files", file);
     }
 
     try {

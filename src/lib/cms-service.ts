@@ -87,6 +87,143 @@ export function writePageContentCache(rows: PageContent[]): void {
   }
 }
 
+const HOME_HERO_BACKGROUND_KEY = "hero.background";
+
+/**
+ * Keep the legacy Homepage > Hero media save path in sync with the page-content
+ * cache used by public pages. The page-content row remains the public override,
+ * so the Page Content editor keeps its existing precedence.
+ */
+export function syncHomeHeroVideoCache(videoUrl: unknown): void {
+  if (typeof videoUrl !== "string") return;
+
+  const normalizedUrl = videoUrl.trim();
+  const rows = readPageContentCache();
+  let cache: Record<string, unknown> = {};
+  try {
+    if (fs.existsSync(CMS_CACHE_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(CMS_CACHE_PATH, "utf-8"));
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        cache = parsed as Record<string, unknown>;
+      }
+    }
+  } catch (error) {
+    console.warn("[CMS] Error reading hero cache:", error);
+  }
+  const cachedHero = cache.hero && typeof cache.hero === "object" && !Array.isArray(cache.hero)
+    ? cache.hero as Record<string, unknown>
+    : {};
+  const now = new Date().toISOString();
+  const existingIndex = rows.findIndex(
+    (row) => row.page_slug === "home" && row.content_key === HOME_HERO_BACKGROUND_KEY,
+  );
+
+  if (existingIndex >= 0) {
+    rows[existingIndex] = {
+      ...rows[existingIndex],
+      content_type: "video",
+      value: normalizedUrl,
+      media_url: normalizedUrl || null,
+      updated_at: now,
+    };
+  } else {
+    rows.push({
+      id: "local-home-hero-background",
+      page_slug: "home",
+      content_key: HOME_HERO_BACKGROUND_KEY,
+      label: "Hero background video",
+      content_type: "video",
+      value: normalizedUrl,
+      media_url: normalizedUrl || null,
+      alt_text: "ACE SELECT hero video",
+      sort_order: 30,
+      is_active: true,
+      created_at: now,
+      updated_at: now,
+    });
+  }
+
+  cache.page_content = rows;
+  cache.hero = { ...cachedHero, background_video_url: normalizedUrl };
+  fs.writeFileSync(CMS_CACHE_PATH, `${JSON.stringify(cache, null, 2)}\n`, "utf-8");
+}
+
+/**
+ * Mirror a legacy hero video save into the remote page-content row. Existing
+ * editor metadata is preserved; only the media fields are synchronized.
+ */
+export async function syncHomeHeroVideoPageContent(
+  supabase: SupabaseClient,
+  videoUrl: unknown,
+): Promise<void> {
+  if (typeof videoUrl !== "string") return;
+
+  const normalizedUrl = videoUrl.trim();
+  const { data: existing, error: lookupError } = await supabase
+    .from("cms_page_content")
+    .select("id")
+    .eq("page_slug", "home")
+    .eq("content_key", HOME_HERO_BACKGROUND_KEY)
+    .maybeSingle();
+
+  if (lookupError) throw lookupError;
+
+  const mediaFields = {
+    content_type: "video",
+    value: normalizedUrl,
+    media_url: normalizedUrl || null,
+  };
+
+  if (existing?.id) {
+    const { error } = await supabase
+      .from("cms_page_content")
+      .update(mediaFields)
+      .eq("id", existing.id);
+    if (error) throw error;
+    return;
+  }
+
+  const { error } = await supabase.from("cms_page_content").insert({
+    page_slug: "home",
+    content_key: HOME_HERO_BACKGROUND_KEY,
+    label: "Hero background video",
+    ...mediaFields,
+    alt_text: "ACE SELECT hero video",
+    sort_order: 30,
+    is_active: true,
+  });
+  if (error) throw error;
+}
+
+/** Mirror a Page Content editor save into the legacy hero_content row. */
+export async function syncHomeHeroVideoHeroContent(
+  supabase: SupabaseClient,
+  videoUrl: unknown,
+): Promise<void> {
+  if (typeof videoUrl !== "string") return;
+
+  const { data: existing, error: lookupError } = await supabase
+    .from("hero_content")
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+
+  if (lookupError) throw lookupError;
+
+  const mediaFields = { background_video_url: videoUrl.trim() || null };
+  if (existing?.id) {
+    const { error } = await supabase
+      .from("hero_content")
+      .update(mediaFields)
+      .eq("id", existing.id);
+    if (error) throw error;
+    return;
+  }
+
+  const { error } = await supabase.from("hero_content").insert(mediaFields);
+  if (error) throw error;
+}
+
 // ================================================================
 // Helper: fetch from Supabase OR return null (triggers fallback)
 // ================================================================

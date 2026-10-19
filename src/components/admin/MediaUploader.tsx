@@ -14,6 +14,11 @@ import {
   Film,
   Sparkles,
 } from "lucide-react";
+import {
+  ADMIN_UPLOAD_MAX_FILES,
+  ADMIN_UPLOAD_MAX_FILE_SIZE,
+  ADMIN_UPLOAD_MAX_TOTAL_SIZE,
+} from "@/lib/upload-limits";
 
 export function isVideoUrl(url: string): boolean {
   if (!url) return false;
@@ -69,19 +74,47 @@ export default function MediaUploader({
     ? [value.trim()]
     : [];
 
+  function formatMegabytes(bytes: number): string {
+    return `${Math.round(bytes / (1024 * 1024))} MB`;
+  }
+
   async function handleFiles(files: FileList | File[]) {
     if (!files || files.length === 0) return;
 
     setErrorMessage(null);
+    const selectedFiles = Array.from(files);
+    if (!multiple && selectedFiles.length > 1) {
+      setErrorMessage("Please choose one file for this field.");
+      return;
+    }
+    if (selectedFiles.length > ADMIN_UPLOAD_MAX_FILES) {
+      setErrorMessage(`You can upload up to ${ADMIN_UPLOAD_MAX_FILES} files at a time.`);
+      return;
+    }
+
+    const oversizedFile = selectedFiles.find((file) => file.size > ADMIN_UPLOAD_MAX_FILE_SIZE);
+    if (oversizedFile) {
+      setErrorMessage(
+        `"${oversizedFile.name}" exceeds the ${formatMegabytes(ADMIN_UPLOAD_MAX_FILE_SIZE)} per-file limit.`
+      );
+      return;
+    }
+
+    const totalSize = selectedFiles.reduce((total, file) => total + file.size, 0);
+    if (totalSize > ADMIN_UPLOAD_MAX_TOTAL_SIZE) {
+      setErrorMessage(`The total upload size cannot exceed ${formatMegabytes(ADMIN_UPLOAD_MAX_TOTAL_SIZE)}.`);
+      return;
+    }
+
     setUploading(true);
-    setUploadProgress(`Uploading ${files.length} file${files.length > 1 ? "s" : ""}...`);
+    setUploadProgress(`Uploading ${selectedFiles.length} file${selectedFiles.length > 1 ? "s" : ""}...`);
 
     const formData = new FormData();
     formData.append("bucket", bucket);
     formData.append("folder", folder);
 
-    for (let i = 0; i < files.length; i++) {
-      formData.append("files", files[i]);
+    for (const file of selectedFiles) {
+      formData.append("files", file);
     }
 
     try {
@@ -204,6 +237,10 @@ export default function MediaUploader({
                   <span className="text-[#283A97] underline underline-offset-2">Click to choose from files</span> or drag & drop here
                 </p>
                 <p className="text-xs text-neutral-500 mt-1">{helperText}</p>
+                <p className="text-[11px] text-neutral-400 mt-1">
+                  Up to {formatMegabytes(ADMIN_UPLOAD_MAX_FILE_SIZE)} per file
+                  {multiple ? `, ${ADMIN_UPLOAD_MAX_FILES} files per upload` : ""}.
+                </p>
               </div>
               <div className="flex items-center gap-2 pt-1 text-[11px] text-neutral-400 font-medium">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-neutral-100">

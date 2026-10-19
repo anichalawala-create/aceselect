@@ -3,9 +3,27 @@ import fs from "node:fs";
 const cachePath = new URL("../src/data/cms-content-cache.json", import.meta.url);
 const cache = JSON.parse(fs.readFileSync(cachePath, "utf8"));
 const rows = cache.page_content;
+const heroRoute = fs.readFileSync(new URL("../src/app/api/admin/content/route.ts", import.meta.url), "utf8");
+const pageContentRoute = fs.readFileSync(new URL("../src/app/api/admin/page-content/route.ts", import.meta.url), "utf8");
+const cmsService = fs.readFileSync(new URL("../src/lib/cms-service.ts", import.meta.url), "utf8");
+const homepage = fs.readFileSync(new URL("../src/app/page.tsx", import.meta.url), "utf8");
 
 if (!Array.isArray(rows) || rows.length === 0) {
   throw new Error("CMS page-content cache must contain at least one row.");
+}
+
+const homeHeroBackground = rows.find((row) => row.page_slug === "home" && row.content_key === "hero.background");
+if (!homeHeroBackground || homeHeroBackground.content_type !== "video") {
+  throw new Error("CMS page-content cache must contain a home hero.background video row.");
+}
+if (!heroRoute.includes("syncHomeHeroVideoCache") || !heroRoute.includes("syncHomeHeroVideoPageContent")) {
+  throw new Error("Legacy hero saves must synchronize the home hero.background page-content row.");
+}
+if (!pageContentRoute.includes("syncHomeHeroVideoHeroContent") || !cmsService.includes("syncHomeHeroVideoHeroContent")) {
+  throw new Error("Page Content hero video saves must synchronize the legacy hero_content row.");
+}
+if (!homepage.includes('getPageContentMedia(pageContent, "hero.background"')) {
+  throw new Error("Homepage must continue resolving the hero.background page-content override.");
 }
 
 const seen = new Set();

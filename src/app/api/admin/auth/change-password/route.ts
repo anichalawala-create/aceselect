@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentAdminUser, getSupabaseAdmin } from "@/lib/auth";
+import { getCurrentAdminUser, getSupabaseAdmin, isSupabaseAdminError } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
@@ -90,6 +90,9 @@ export async function POST(req: Request) {
     });
   } catch (error: unknown) {
     console.error("Change password error:", error);
+    if (isSupabaseAdminError(error)) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     return NextResponse.json(
       { error: "Failed to update password." },
       { status: 500 }
