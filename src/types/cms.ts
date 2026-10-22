@@ -195,8 +195,10 @@ export interface ProductCategory {
   id: string;
   name: string;
   slug: string;
-  icon_name: string;
+  icon_name?: string;
+  icon?: string;
   description: string;
+  badge?: string;
   sort_order: number;
   is_active: boolean;
 }

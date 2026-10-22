@@ -28,11 +28,13 @@ Editor:
 2. `supabase/migrations/20261016_page_content.sql`
 3. `supabase/migrations/20261017_page_content_hardening.sql`
 4. `supabase/migrations/20261019_hero_media_bridge.sql`
+5. `supabase/migrations/20261021_hero_content_cleanup.sql`
 
 The page-content migrations are idempotent. They seed editable fields for
 Home, Who We Are, Services, Industries, Projects, and Contact, then add
 production-safe key and media URL constraints. The hero media bridge adds the
-columns required by the legacy Homepage → Hero editor.
+columns required by the legacy Homepage → Hero editor. The hero cleanup
+migration removes duplicate active hero records and adds a uniqueness guard.
 
 If you want one file that includes the complete schema, seeds, RLS policies,
 storage buckets, page-content editor table, and hardening constraints, run this

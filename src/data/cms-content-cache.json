@@ -20,13 +20,13 @@
       "content_key": "hero.background",
       "label": "Hero background video",
       "content_type": "video",
-      "value": "",
-      "media_url": "/home-hero.mp4",
+      "value": "https://hudwfdwllolqvzrqyzei.supabase.co/storage/v1/object/public/aceselect-projects/homepage/1792636228023_5faabe34-b6fd-41da-8b64-8109b0998503_whatsapp_video_2026-10-14_at_11.47.55_pm.mp4",
+      "media_url": "https://hudwfdwllolqvzrqyzei.supabase.co/storage/v1/object/public/aceselect-projects/homepage/1792636228023_5faabe34-b6fd-41da-8b64-8109b0998503_whatsapp_video_2026-10-14_at_11.47.55_pm.mp4",
       "alt_text": "ACE SELECT hero video",
       "sort_order": 30,
       "is_active": true,
       "created_at": "2026-10-16T00:00:00.000Z",
-      "updated_at": "2026-10-16T00:00:00.000Z"
+      "updated_at": "2026-10-22T02:30:47.574Z"
     },
     {
       "id": "local-who-we-are-hero",
@@ -209,22 +209,45 @@
       "is_active": true,
       "created_at": "2026-10-16T00:00:00.000Z",
       "updated_at": "2026-10-16T00:00:00.000Z"
+    },
+    {
+      "id": "local-home-hero-poster",
+      "page_slug": "home",
+      "content_key": "hero.poster",
+      "label": "Hero poster image",
+      "content_type": "image",
+      "value": "https://hudwfdwllolqvzrqyzei.supabase.co/storage/v1/object/public/aceselect-projects/homepage/1792636229667_45f59781-d35b-4e5a-994e-694deeb4e3fb_whatsapp_video_2026-10-14_at_11.47.55_pm-poster.jpg",
+      "media_url": "https://hudwfdwllolqvzrqyzei.supabase.co/storage/v1/object/public/aceselect-projects/homepage/1792636229667_45f59781-d35b-4e5a-994e-694deeb4e3fb_whatsapp_video_2026-10-14_at_11.47.55_pm-poster.jpg",
+      "alt_text": "ACE SELECT homepage hero poster",
+      "sort_order": 31,
+      "is_active": true,
+      "created_at": "2026-10-22T02:39:25.027Z",
+      "updated_at": "2026-10-22T02:39:25.027Z"
     }
   ],
   "hero": {
-    "eyebrow_text": "INDIAN OEM & MANUFACTURER | ACTIVE LED & DIGITAL SIGNAGE",
-    "headline_line1": "ENGINEERED FOR INDIA.",
-    "headline_line2": "DESIGNED FOR EVERY APPLICATION.",
-    "subheadline": "ACE SELECT is an Indian OEM and Manufacturer of Active LED Video Wall and Digital Signage Display Systems, delivering professionally engineered, application-specific display solutions for government, banking, corporate, institutional, commercial, and mission-critical environments across India.",
+    "eyebrow_text": "ENGINEERING THE NEXT GENERATION OF LED DISPLAY SYSTEMS",
+    "headline_line1": "OEM & Manufacturer’s of LED Video Wall Systems",
+    "headline_line2": "Engineered for Performance & Supported for the Long Run.",
+    "subheadline": "ACE SELECT delivers Active LED Video Walls System and Digital Signage Display Systems, backed by application-focused engineering, quality-led integration, and responsive after-sales service.",
     "cta_primary_label": "EXPLORE OUR WORK",
     "cta_primary_href": "/projects",
     "cta_secondary_label": "GET A QUOTE",
     "cta_secondary_href": "/contact",
-    "bottom_tagline": "PROFESSIONALLY ENGINEERED\nAPPLICATION-SPECIFIC DISPLAY SYSTEMS",
-    "vertical_labels": ["GOVERNMENT", "BANKING", "CORPORATE", "INSTITUTIONAL", "COMMERCIAL", "MISSION-CRITICAL"],
-    "background_video_url": "/home-hero.mp4",
-    "poster_url": "/home-hero-poster.jpg",
-    "is_active": true
+    "bottom_tagline": "POSSIBILITIES INFINITE",
+    "vertical_labels": [
+      "GOVERNMENT",
+      "BANKING",
+      "CORPORATE",
+      "INSTITUTIONAL",
+      "COMMERCIAL",
+      "MISSION-CRITICAL"
+    ],
+    "background_video_url": "https://hudwfdwllolqvzrqyzei.supabase.co/storage/v1/object/public/aceselect-projects/homepage/1792636228023_5faabe34-b6fd-41da-8b64-8109b0998503_whatsapp_video_2026-10-14_at_11.47.55_pm.mp4",
+    "poster_url": "https://hudwfdwllolqvzrqyzei.supabase.co/storage/v1/object/public/aceselect-projects/homepage/1792636229667_45f59781-d35b-4e5a-994e-694deeb4e3fb_whatsapp_video_2026-10-14_at_11.47.55_pm-poster.jpg",
+    "is_active": true,
+    "id": "04fef726-884c-4e09-aa79-9ce5f546fdb9",
+    "updated_at": "2026-10-21T06:15:30.505116+00:00"
   },
   "about": {
     "eyebrow": "ABOUT ACE SELECT",
@@ -233,24 +256,96 @@
     "body2": "From high-density urban transit hubs to remote tier-3 banking branches, our active LED and architectural identity networks empower brands across 476+ cities nationwide."
   },
   "stats": [
-    { "id": "1", "icon_name": "Building2", "end_value": 476, "prefix": "", "suffix": "+", "label": "CITIES SERVED", "sort_order": 1, "is_active": true },
-    { "id": "2", "icon_name": "TrendingUp", "end_value": 100, "prefix": "₹", "suffix": " CR+", "label": "ANNUAL TURNOVER", "sort_order": 2, "is_active": true },
-    { "id": "3", "icon_name": "Monitor", "end_value": 34250, "prefix": "", "suffix": " m²+", "label": "ACTIVE LED INSTALLED", "sort_order": 3, "is_active": true },
-    { "id": "4", "icon_name": "Calendar", "end_value": 1996, "prefix": "", "suffix": "", "label": "SINCE YEAR", "sort_order": 4, "is_active": true }
+    {
+      "id": "4cbb18fe-8494-4a6d-b962-cdb28d0f082a",
+      "icon_name": "Building2",
+      "end_value": 475,
+      "prefix": null,
+      "suffix": "+",
+      "label": "CITIES SERVED",
+      "sort_order": 1,
+      "is_active": true
+    },
+    {
+      "id": "a9dcb904-4716-4d13-a569-f79fda227dca",
+      "icon_name": "TrendingUp",
+      "end_value": 100,
+      "prefix": "₹",
+      "suffix": " CR+",
+      "label": "ANNUAL TURNOVER",
+      "sort_order": 2,
+      "is_active": true
+    },
+    {
+      "id": "9cbf18a1-8571-464e-9c99-7e98693299a1",
+      "icon_name": "Monitor",
+      "end_value": 34250,
+      "prefix": null,
+      "suffix": " m²+",
+      "label": "ACTIVE LED INSTALLED",
+      "sort_order": 3,
+      "is_active": true
+    },
+    {
+      "id": "9c369575-6ede-44b2-be80-5c0aeb59530f",
+      "icon_name": "Calendar",
+      "end_value": 1996,
+      "prefix": null,
+      "suffix": "",
+      "label": "SINCE YEAR",
+      "sort_order": 4,
+      "is_active": true
+    }
   ],
   "process": [
-    { "number": "01", "title": "DISCOVER", "description": "Understand client brand, site geometry & visibility requirements" },
-    { "number": "02", "title": "DESIGN", "description": "Optical engineering, structural calculation & architectural 3D planning" },
-    { "number": "03", "title": "PRODUCE", "description": "Precision OEM manufacturing with ISO 9001:2015 quality control" },
-    { "number": "04", "title": "DEPLOY", "description": "Turnkey nationwide structural installation & calibration" },
-    { "number": "05", "title": "INSPECT", "description": "Multi-point luminescence, thermal & safety compliance auditing" },
-    { "number": "06", "title": "DELIVER", "description": "Jio Software CMS integration, remote telemetry & SLA support" }
+    {
+      "number": "01",
+      "title": "DISCOVER",
+      "description": "Understand client brand, site geometry & visibility requirements"
+    },
+    {
+      "number": "02",
+      "title": "DESIGN",
+      "description": "Optical engineering, structural calculation & architectural 3D planning"
+    },
+    {
+      "number": "03",
+      "title": "PRODUCE",
+      "description": "Precision OEM manufacturing with ISO 9001:2015 quality control"
+    },
+    {
+      "number": "04",
+      "title": "DEPLOY",
+      "description": "Turnkey nationwide structural installation & calibration"
+    },
+    {
+      "number": "05",
+      "title": "INSPECT",
+      "description": "Multi-point luminescence, thermal & safety compliance auditing"
+    },
+    {
+      "number": "06",
+      "title": "DELIVER",
+      "description": "Jio Software CMS integration, remote telemetry & SLA support"
+    }
   ],
   "pan_india": [
-    { "label": "States & Territories", "value": "27+" },
-    { "label": "Cities with Active Installations", "value": "476+" },
-    { "label": "Regional Representatives", "value": "176+" },
-    { "label": "Direct Service Hubs", "value": "14" }
+    {
+      "label": "States & Territories",
+      "value": "27+"
+    },
+    {
+      "label": "Cities with Active Installations",
+      "value": "476+"
+    },
+    {
+      "label": "Regional Representatives",
+      "value": "176+"
+    },
+    {
+      "label": "Direct Service Hubs",
+      "value": "14"
+    }
   ],
   "company": {
     "vision": "To engineer transformative visual experiences that elevate India's commercial and public landscapes.",
@@ -305,42 +400,144 @@
     }
   ],
   "clients": [
-    { "id": "1", "name": "State Bank of India (SBI)", "tag": "Public Sector", "tint_color": "#283A97", "is_active": true },
-    { "id": "2", "name": "Bank of Baroda", "tag": "National Bank", "tint_color": "#EA580C", "is_active": true },
-    { "id": "3", "name": "ICICI Bank", "tag": "Private Banking", "tint_color": "#B91C1C", "is_active": true },
-    { "id": "4", "name": "Axis Bank", "tag": "Commercial Banking", "tint_color": "#9D174D", "is_active": true },
-    { "id": "5", "name": "HDFC Bank", "tag": "Financial Services", "tint_color": "#1E3A8A", "is_active": true },
-    { "id": "6", "name": "Indian Bank", "tag": "Public Sector", "tint_color": "#2563EB", "is_active": true },
-    { "id": "7", "name": "Muthoot Finance", "tag": "NBFC Group", "tint_color": "#DC2626", "is_active": true },
-    { "id": "8", "name": "Bank of Maharashtra", "tag": "State Banking", "tint_color": "#0284C7", "is_active": true },
-    { "id": "9", "name": "Cosmos Bank", "tag": "Co-op Banking", "tint_color": "#4F46E5", "is_active": true },
-    { "id": "10", "name": "City Union Bank", "tag": "Commercial", "tint_color": "#059669", "is_active": true },
-    { "id": "11", "name": "Punjab & Sindh Bank", "tag": "Public Sector", "tint_color": "#D97706", "is_active": true }
+    {
+      "id": "1",
+      "name": "State Bank of India (SBI)",
+      "tag": "Public Sector",
+      "tint_color": "#283A97",
+      "is_active": true
+    },
+    {
+      "id": "2",
+      "name": "Bank of Baroda",
+      "tag": "National Bank",
+      "tint_color": "#EA580C",
+      "is_active": true
+    },
+    {
+      "id": "3",
+      "name": "ICICI Bank",
+      "tag": "Private Banking",
+      "tint_color": "#B91C1C",
+      "is_active": true
+    },
+    {
+      "id": "4",
+      "name": "Axis Bank",
+      "tag": "Commercial Banking",
+      "tint_color": "#9D174D",
+      "is_active": true
+    },
+    {
+      "id": "5",
+      "name": "HDFC Bank",
+      "tag": "Financial Services",
+      "tint_color": "#1E3A8A",
+      "is_active": true
+    },
+    {
+      "id": "6",
+      "name": "Indian Bank",
+      "tag": "Public Sector",
+      "tint_color": "#2563EB",
+      "is_active": true
+    },
+    {
+      "id": "7",
+      "name": "Muthoot Finance",
+      "tag": "NBFC Group",
+      "tint_color": "#DC2626",
+      "is_active": true
+    },
+    {
+      "id": "8",
+      "name": "Bank of Maharashtra",
+      "tag": "State Banking",
+      "tint_color": "#0284C7",
+      "is_active": true
+    },
+    {
+      "id": "9",
+      "name": "Cosmos Bank",
+      "tag": "Co-op Banking",
+      "tint_color": "#4F46E5",
+      "is_active": true
+    },
+    {
+      "id": "10",
+      "name": "City Union Bank",
+      "tag": "Commercial",
+      "tint_color": "#059669",
+      "is_active": true
+    },
+    {
+      "id": "11",
+      "name": "Punjab & Sindh Bank",
+      "tag": "Public Sector",
+      "tint_color": "#D97706",
+      "is_active": true
+    }
   ],
   "testimonials": [
     {
-      "id": "1",
+      "id": "9bdf6b45-a931-4b59-879d-0b59fa74b2a6",
       "quote": "ACE SELECT delivered exceptional turnkey ATM kiosk fabrication and signage deployment across hundreds of locations nationwide on schedule.",
       "author_name": "Rohit Sharma",
       "author_title": "Head - ATM Deployments & Infrastructure",
       "author_company": "HITACHI PAYMENT SERVICES",
-      "is_featured": true
+      "author_photo_url": null,
+      "is_featured": true,
+      "sort_order": 1,
+      "is_active": true,
+      "created_at": "2026-10-22T02:19:40.556635+00:00"
     },
     {
-      "id": "2",
-      "quote": "Their end-to-end support from optical design to retail installation made our flagship in-store LED display rollouts smooth and flawless.",
+      "id": "ae8709f0-15fc-4204-a2ef-3902b4de8e7d",
+      "quote": "Their end-to-end support from optical design to retail installation made our flagship in-store Active LED display rollouts smooth, stunning, and flawless.",
       "author_name": "Neha Verma",
-      "author_title": "Marketing & Retail Projects Head",
+      "author_title": "VP - Retail Experience & Projects",
       "author_company": "TITAN COMPANY / CARATLANE",
-      "is_featured": true
+      "author_photo_url": null,
+      "is_featured": true,
+      "sort_order": 2,
+      "is_active": true,
+      "created_at": "2026-10-22T02:19:40.556635+00:00"
     },
     {
-      "id": "3",
-      "quote": "Reliable, innovative and committed. ACE SELECT has been our trusted partner for nationwide banking branch branding and display systems.",
+      "id": "e6de6019-d345-440a-8e52-85ce0608db92",
+      "quote": "Reliable, innovative and committed. ACE SELECT has been our trusted partner for nationwide banking branch rebranding and display infrastructure for over a decade.",
       "author_name": "Amit Khanna",
       "author_title": "Chief Manager - Infrastructure & Branding",
       "author_company": "STATE BANK OF INDIA",
-      "is_featured": true
+      "author_photo_url": null,
+      "is_featured": true,
+      "sort_order": 3,
+      "is_active": true,
+      "created_at": "2026-10-22T02:19:40.556635+00:00"
+    },
+    {
+      "id": "bb1e9d35-a565-47d5-b25a-8b644ff03b9e",
+      "quote": "The architectural display installations and facade branding by ACE SELECT exceeded our expectations in build quality, structural safety, and visual impact.",
+      "author_name": "Priya Sundaram",
+      "author_title": "Director - Commercial Real Estate & Workspace Design",
+      "author_company": "DLF CYBERCITY",
+      "author_photo_url": null,
+      "is_featured": true,
+      "sort_order": 4,
+      "is_active": true,
+      "created_at": "2026-10-22T02:19:40.556635+00:00"
+    },
+    {
+      "id": "842021b4-fd51-4c69-a8a5-fe5d61faaed8",
+      "quote": "Rapid nationwide rollout across Tier 2 and Tier 3 branches without a single hitch. Their logistical capability and fabrication consistency across India is unmatched.",
+      "author_name": "Vikramaditya Rao",
+      "author_title": "Head of Operations & Network Expansion",
+      "author_company": "MUTHOOT FINANCE GROUP",
+      "author_photo_url": null,
+      "is_featured": true,
+      "sort_order": 5,
+      "is_active": true,
+      "created_at": "2026-10-22T02:19:40.556635+00:00"
     }
   ],
   "certifications": [
@@ -445,5 +642,55 @@
       ],
       "is_featured": true
     }
+  ],
+  "product_categories": [
+    {
+      "id": "active-indoor-led",
+      "slug": "active-indoor-led",
+      "name": "Active Indoor LED",
+      "icon": "Monitor",
+      "description": "High-resolution indoor LED video wall solutions for corporate, command center & broadcast environments",
+      "badge": "Active LED",
+      "sort_order": 1,
+      "is_active": true
+    },
+    {
+      "id": "outdoor-led-displays",
+      "slug": "outdoor-led-displays",
+      "name": "Outdoor LED Displays",
+      "icon": "Sun",
+      "description": "Weather-resistant high-brightness outdoor active LED video displays and highway DOOH billboards",
+      "badge": "Outdoor",
+      "sort_order": 2,
+      "is_active": true
+    },
+    {
+      "id": "digital-standees",
+      "slug": "digital-standees",
+      "name": "Digital Standees",
+      "icon": "Tablet",
+      "description": "Android & Windows powered commercial digital standees from 32\" to 65\" for retail and bank branches",
+      "badge": "Standees",
+      "sort_order": 3,
+      "is_active": true
+    },
+    {
+      "id": "signage-software",
+      "slug": "signage-software",
+      "name": "Signage & Software",
+      "icon": "Cloud",
+      "description": "Architectural signage, banking kiosks, and centralized cloud CMS hosted on Jio Software",
+      "badge": "Software & CMS",
+      "sort_order": 4,
+      "is_active": true
+    }
+  ],
+  "homepage_solutions": [
+    { "id": "1", "title": "ACTIVE DIGITAL\nLED DISPLAYS", "img": "/images/products/indoor-smd-page1.jpg", "href": "/products", "sort_order": 1 },
+    { "id": "2", "title": "ANDROID DIGITAL\nSTANDEES (32\"-65\")", "img": "/images/products/standee-banner.jpg", "href": "/products", "sort_order": 2 },
+    { "id": "3", "title": "OUTDOOR HIGH BRIGHTNESS\nSMD SERIES", "img": "/images/products/outdoor-smd-page1.jpg", "href": "/products", "sort_order": 3 },
+    { "id": "4", "title": "INTERACTIVE &\nSELF-SERVICE KIOSKS", "img": "/images/projects/project-bkc-elobby.jpg", "href": "/products", "sort_order": 4 },
+    { "id": "5", "title": "STATIC SIGNAGE &\nGLOW SIGN BOARDS", "img": "/images/projects/atm-kiosk-branding.jpg", "href": "/products", "sort_order": 5 },
+    { "id": "6", "title": "SIGNAGE CMS ON\nJIO SOFTWARE", "img": "/images/products/product-hierarchy.jpg", "href": "/products", "sort_order": 6 }
   ]
 }

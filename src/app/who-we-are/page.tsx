@@ -62,6 +62,7 @@ export default async function WhoWeArePage() {
         <div className="absolute inset-0 w-full h-full z-0">
           <div className="absolute inset-0 bg-gradient-to-r from-[#0B0F2B] via-[#0B0F2B]/85 to-[#0B0F2B]/70 z-10" />
           <video 
+            key={heroVideo}
             className="w-full h-full object-cover absolute inset-0" 
             poster={heroPoster}
             autoPlay 
@@ -70,8 +71,6 @@ export default async function WhoWeArePage() {
             playsInline 
           >
             <source src={heroVideo} type="video/mp4" />
-            <source src="/company-hero.mp4" type="video/mp4" />
-            <source src="/home-hero.mp4" type="video/mp4" />
           </video>
         </div>
 

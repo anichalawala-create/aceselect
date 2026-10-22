@@ -79,7 +79,7 @@ export default function AdminHomepagePanIndiaPage() {
               </label>
               <input
                 type="text"
-                value={s.label}
+                value={s.label ?? ""}
                 onChange={(e) => {
                   const val = e.target.value;
                   setStats((prev) => prev.map((item, i) => (i === idx ? { ...item, label: val } : item)));
@@ -93,7 +93,7 @@ export default function AdminHomepagePanIndiaPage() {
               </label>
               <input
                 type="text"
-                value={s.value}
+                value={s.value ?? ""}
                 onChange={(e) => {
                   const val = e.target.value;
                   setStats((prev) => prev.map((item, i) => (i === idx ? { ...item, value: val } : item)));

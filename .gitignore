@@ -47,3 +47,4 @@ next-env.d.ts
 cookie.txt
 A_photorealistic_roadside_digi.mp4
 deno.lock
+.opencode/

@@ -20,10 +20,21 @@ import {
   Zap,
 } from "lucide-react";
 
+import {
+  getPageContent,
+  getPageContentValue,
+  getPageContentMedia,
+  getProductCategories,
+  getProductsCatalog,
+} from "@/lib/cms-service";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
-  title: "LDA II Series | ACE SELECT",
+  title: "Display Products & OEM Solutions | ACE SELECT",
   description:
-    "Explore ACE SELECT's LDA II Series indoor LED display: fine pixel pitch, high refresh rate, simple maintenance, and dependable performance for commercial spaces.",
+    "Explore ACE SELECT's complete display hardware lineup: indoor active LED video walls, outdoor displays, commercial digital standees, and signage CMS.",
 };
 
 const highlights = [
@@ -120,7 +131,23 @@ const cases = [
   },
 ];
 
-export default function ProductsPage() {
+export default async function ProductsPage() {
+  const [pageContent, categories, products] = await Promise.all([
+    getPageContent("products"),
+    getProductCategories(),
+    getProductsCatalog(),
+  ]);
+
+  const heroEyebrow = getPageContentValue(pageContent, "hero.eyebrow", "ACE SELECT / ACTIVE INDOOR LED");
+  const heroTitle = getPageContentValue(pageContent, "hero.title", "LDA II");
+  const heroSeries = getPageContentValue(pageContent, "hero.series", "Series");
+  const heroDesc = getPageContentValue(
+    pageContent,
+    "hero.description",
+    "Indoor LED display engineered for confident commercial storytelling — from high-traffic retail spaces to polished corporate environments."
+  );
+  const heroImage = getPageContentMedia(pageContent, "hero.image", "/images/products/indoor-smd-page1.jpg");
+
   return (
     <div className="bg-white text-neutral-900">
       <main>
@@ -135,21 +162,21 @@ export default function ProductsPage() {
                 Products
               </Link>
               <ChevronRight className="h-3.5 w-3.5 text-white/30" aria-hidden="true" />
-              <span className="text-solvorry-light">LDA II Series</span>
+              <span className="text-solvorry-light">{heroTitle} {heroSeries}</span>
             </nav>
 
             <div className="grid items-center gap-12 lg:grid-cols-[1fr_0.9fr] lg:gap-20">
               <div className="max-w-3xl">
                 <p className="mb-5 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.25em] text-solvorry-light">
                   <span className="h-px w-8 bg-solvorry-light" />
-                  ACE SELECT / ACTIVE INDOOR LED
+                  {heroEyebrow}
                 </p>
                 <h1 className="font-display text-5xl font-black leading-[0.98] tracking-[-0.04em] sm:text-6xl lg:text-8xl">
-                  LDA II
-                  <span className="block text-white/45">Series</span>
+                  {heroTitle}
+                  <span className="block text-white/45">{heroSeries}</span>
                 </h1>
                 <p className="mt-8 max-w-2xl text-lg leading-relaxed text-white/75 sm:text-xl">
-                  Indoor LED display engineered for confident commercial storytelling — from high-traffic retail spaces to polished corporate environments.
+                  {heroDesc}
                 </p>
 
                 <div className="mt-10 flex flex-col gap-3 sm:flex-row">
@@ -161,10 +188,10 @@ export default function ProductsPage() {
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                   <a
-                    href="#parameter"
+                    href="#catalog"
                     className="inline-flex items-center justify-center gap-2 border border-white/25 px-6 py-3.5 text-sm font-bold text-white transition-colors hover:border-white hover:bg-white/10"
                   >
-                    View parameters
+                    View catalog
                     <ChevronRight className="h-4 w-4" aria-hidden="true" />
                   </a>
                 </div>
@@ -184,8 +211,8 @@ export default function ProductsPage() {
                 <div className="absolute -inset-4 border border-white/10 sm:-inset-6" />
                 <div className="relative aspect-[4/3] overflow-hidden bg-neutral-900">
                   <Image
-                    src="/images/products/indoor-smd-page1.jpg"
-                    alt="ACE SELECT LDA II Series indoor LED display"
+                    src={heroImage}
+                    alt="ACE SELECT display"
                     fill
                     priority
                     sizes="(min-width: 1024px) 45vw, 100vw"
@@ -194,7 +221,7 @@ export default function ProductsPage() {
                   <div className="absolute inset-0 bg-gradient-to-tr from-[#0B0F2B]/65 via-transparent to-white/10" />
                   <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4 border-t border-white/25 pt-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/80">Indoor active LED</p>
-                    <p className="text-xs font-semibold text-white/55">ACE / LDA II</p>
+                    <p className="text-xs font-semibold text-white/55">ACE / {heroTitle}</p>
                   </div>
                 </div>
                 <div className="absolute -bottom-4 -left-4 bg-white px-4 py-3 text-[#0B0F2B] shadow-xl sm:-left-8">
@@ -208,7 +235,12 @@ export default function ProductsPage() {
 
         <nav aria-label="Product sections" className="sticky top-[68px] z-30 border-b border-neutral-200 bg-white/95 shadow-sm backdrop-blur-md sm:top-[80px]">
           <div className="mx-auto flex max-w-[1600px] overflow-x-auto px-4 sm:px-6 lg:px-8">
-            {[{ label: "Features", href: "#features" }, { label: "Parameter", href: "#parameter" }, { label: "Case", href: "#case" }].map((tab) => (
+            {[
+              { label: "Hardware Catalog", href: "#catalog" },
+              { label: "Features", href: "#features" },
+              { label: "Parameter", href: "#parameter" },
+              { label: "Case", href: "#case" },
+            ].map((tab) => (
               <a
                 key={tab.href}
                 href={tab.href}
@@ -272,6 +304,102 @@ export default function ProductsPage() {
                     </ul>
                   </div>
                 </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Dynamic Hardware Catalog & Categories */}
+        <section id="catalog" aria-labelledby="catalog-heading" className="scroll-mt-20 bg-[#F7F8FA] py-20 sm:py-28 border-y border-neutral-200">
+          <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+              <div>
+                <p className="mb-4 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.25em] text-solvorry-DEFAULT">
+                  <span className="h-px w-8 bg-solvorry-DEFAULT" />
+                  OEM Hardware & Display Directory
+                </p>
+                <h2 id="catalog-heading" className="font-display text-4xl font-black tracking-tight text-neutral-950 sm:text-5xl">
+                  Display Categories & Solutions
+                </h2>
+              </div>
+              <p className="max-w-md text-sm text-neutral-600 leading-relaxed md:text-right">
+                Explore our fine pixel pitch active LEDs, weather-resistant outdoor displays, commercial digital standees, and smart cloud signage.
+              </p>
+            </div>
+
+            {/* Categories Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
+              {categories.map((cat) => (
+                <div key={cat.id} className="bg-white p-6 rounded-xl border border-neutral-200 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-solvorry-DEFAULT bg-blue-50 px-2.5 py-1 rounded">
+                        {cat.badge || "Category"}
+                      </span>
+                    </div>
+                    <h3 className="font-display font-bold text-lg text-neutral-900 mb-2">{cat.name}</h3>
+                    <p className="text-xs text-neutral-500 leading-relaxed">{cat.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Products Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {products.map((prod) => (
+                <div key={prod.id} className="bg-white rounded-xl border border-neutral-200 overflow-hidden shadow-xs flex flex-col justify-between group hover:shadow-lg transition-all">
+                  <div>
+                    {prod.image_url ? (
+                      <div className="relative aspect-[16/10] bg-neutral-900 overflow-hidden">
+                        <img
+                          src={prod.image_url}
+                          alt={prod.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        />
+                        {prod.badge && (
+                          <span className="absolute top-3 right-3 bg-neutral-950/80 backdrop-blur-xs text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded">
+                            {prod.badge}
+                          </span>
+                        )}
+                        <span className="absolute bottom-3 left-3 bg-solvorry-DEFAULT text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
+                          {prod.category}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="relative aspect-[16/10] bg-[#0B0F2B] flex items-center justify-center text-white">
+                        <span className="font-display font-bold text-sm tracking-widest uppercase">{prod.category}</span>
+                      </div>
+                    )}
+
+                    <div className="p-6">
+                      <h4 className="font-display font-bold text-base text-neutral-950 mb-1 leading-snug">{prod.name}</h4>
+                      <p className="text-xs text-neutral-500 mb-4 line-clamp-2">{prod.tagline}</p>
+
+                      {prod.specs && prod.specs.length > 0 && (
+                        <div className="space-y-1.5 pt-3 border-t border-neutral-100">
+                          {prod.specs.slice(0, 3).map((spec, sIdx) => {
+                            const specText = typeof spec === "string" ? spec : (spec as any).value || (spec as any).label;
+                            return (
+                              <div key={sIdx} className="flex items-start gap-2 text-[11px] text-neutral-700">
+                                <span className="text-solvorry-DEFAULT font-bold">•</span>
+                                <span className="line-clamp-1">{specText}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-6 pt-0">
+                    <Link
+                      href="/contact"
+                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-neutral-900 hover:bg-solvorry-DEFAULT text-white text-xs font-bold rounded-lg transition-colors group-hover:bg-solvorry-DEFAULT"
+                    >
+                      Enquire Specs <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
               ))}
             </div>
           </div>

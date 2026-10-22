@@ -1,9 +1,49 @@
 -- ================================================================
 -- ACE SELECT CMS — Reusable page-content overrides
 -- ================================================================
+-- Fully standalone, idempotent migration for cms_page_content table.
+-- Safe to run directly in Supabase SQL Editor or via migrations.
 
+BEGIN;
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Ensure updated_at trigger function exists
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+-- Ensure is_admin helper exists with safe fallback if admin_users does not exist yet
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'admin_users'
+  ) THEN
+    RETURN (auth.role() = 'authenticated');
+  END IF;
+
+  RETURN EXISTS (
+    SELECT 1 FROM public.admin_users
+    WHERE supabase_auth_id = auth.uid() AND is_active = true
+  );
+END;
+$$;
+
+-- Create cms_page_content table
 CREATE TABLE IF NOT EXISTS cms_page_content (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   page_slug TEXT NOT NULL,
   content_key TEXT NOT NULL,
   label TEXT NOT NULL,
@@ -39,36 +79,18 @@ CREATE POLICY "Admins can manage page content"
   USING (is_admin())
   WITH CHECK (is_admin());
 
--- Representative defaults for the currently public routes. ON CONFLICT keeps
--- this seed safe to run repeatedly and preserves administrator edits.
+-- Representative defaults for the public routes.
+-- ON CONFLICT preserves existing edits and allows safe re-execution.
 INSERT INTO cms_page_content
   (page_slug, content_key, label, content_type, value, media_url, alt_text, sort_order)
 VALUES
   ('home', 'hero.eyebrow', 'Hero eyebrow', 'text', 'INDIAN OEM & MANUFACTURER | ACTIVE LED & DIGITAL SIGNAGE', NULL, NULL, 10),
-  ('home', 'hero.headline', 'Hero headline', 'text', 'ENGINEERED FOR INDIA. DESIGNED FOR EVERY APPLICATION.', NULL, NULL, 20),
-  ('home', 'hero.background', 'Hero background video', 'video', '', '/home-hero.mp4', 'ACE SELECT hero video', 30),
-  ('who-we-are', 'hero.headline', 'Company hero headline', 'text', 'CREATIVE THINKING. BEYOND THE BOX.', NULL, NULL, 10),
-  ('who-we-are', 'hero.video', 'Company hero video', 'video', '', '/company-hero.mp4', 'ACE SELECT company story', 20),
-  ('services', 'hero.headline', 'Services hero headline', 'text', 'END-TO-END SOLUTIONS FOR EVERY SPACE.', NULL, NULL, 10),
-  ('services', 'hero.intro', 'Services introduction', 'text', 'From branding and retail execution to commercial interiors, activations and rebranding, ACE SELECT delivers integrated solutions designed for scale.', NULL, NULL, 20),
-  ('industries', 'hero.eyebrow', 'Industries eyebrow', 'text', 'SECTORS WE SERVE', NULL, NULL, 10),
-  ('industries', 'hero.headline', 'Industries hero headline', 'text', 'EXPERTISE ACROSS INDUSTRIES', NULL, NULL, 20),
-  ('projects', 'hero.headline', 'Projects hero headline', 'text', 'PROJECTS THAT MAKE AN IMPACT.', NULL, NULL, 10),
-  ('projects', 'hero.intro', 'Projects introduction', 'text', 'Explore ACE SELECT installations across active LED, digital signage, branding and commercial environments.', NULL, NULL, 20),
-  ('contact', 'hero.eyebrow', 'Contact eyebrow', 'text', 'CONTACT US', NULL, NULL, 10),
-  ('contact', 'hero.headline', 'Contact hero headline', 'text', 'START A CONVERSATION', NULL, NULL, 20),
-  ('contact', 'hero.intro', 'Contact introduction', 'text', 'Ready to elevate your brand? Reach out and let''s discuss your vision and spatial requirements.', NULL, NULL, 30)
-ON CONFLICT (page_slug, content_key) DO NOTHING;
-
--- Additional stable keys used by the public page renderers. Administrators can
--- add unlimited keys from /admin/content without changing the schema.
-INSERT INTO cms_page_content
-  (page_slug, content_key, label, content_type, value, media_url, alt_text, sort_order)
-VALUES
   ('home', 'hero.headline_line1', 'Hero headline line 1', 'text', 'ENGINEERED FOR INDIA.', NULL, NULL, 11),
   ('home', 'hero.headline_line2', 'Hero headline line 2', 'text', 'DESIGNED FOR EVERY APPLICATION.', NULL, NULL, 12),
   ('home', 'hero.subheadline', 'Hero subheadline', 'text', 'ACE SELECT is an Indian OEM and Manufacturer of Active LED Video Wall and Digital Signage Display Systems, delivering professionally engineered, application-specific display solutions for government, banking, corporate, institutional, commercial, and mission-critical environments across India.', NULL, NULL, 13),
   ('home', 'hero.bottom_tagline', 'Hero bottom tagline', 'text', 'PROFESSIONALLY ENGINEERED\nAPPLICATION-SPECIFIC DISPLAY SYSTEMS', NULL, NULL, 14),
+  ('home', 'hero.headline', 'Hero headline', 'text', 'ENGINEERED FOR INDIA. DESIGNED FOR EVERY APPLICATION.', NULL, NULL, 20),
+  ('home', 'hero.background', 'Hero background video', 'video', '', '/home-hero.mp4', 'ACE SELECT hero video', 30),
   ('home', 'hero.poster', 'Hero poster image', 'image', '', '/home-hero-poster.jpg', 'ACE SELECT homepage hero', 31),
   ('home', 'about.eyebrow', 'About eyebrow', 'text', 'ABOUT ACE SELECT', NULL, NULL, 40),
   ('home', 'about.headline', 'About headline', 'text', 'CREATIVE THINKING.\nDESIGNING BEYOND THE BOX.', NULL, NULL, 41),
@@ -89,13 +111,25 @@ VALUES
   ('home', 'cta.headline', 'Final CTA headline', 'text', 'LET''S BUILD\nWHAT''S NEXT.', NULL, NULL, 110),
   ('home', 'cta.body', 'Final CTA body', 'text', 'Partner with ACE SELECT for innovative display, branding and retail solutions that make your brand impossible to ignore.', NULL, NULL, 111),
   ('who-we-are', 'hero.eyebrow', 'Company hero eyebrow', 'text', 'ABOUT ACE SELECT', NULL, NULL, 9),
+  ('who-we-are', 'hero.headline', 'Company hero headline', 'text', 'CREATIVE THINKING. BEYOND THE BOX.', NULL, NULL, 10),
   ('who-we-are', 'hero.intro', 'Company hero introduction', 'text', '', NULL, NULL, 11),
+  ('who-we-are', 'hero.video', 'Company hero video', 'video', '', '/company-hero.mp4', 'ACE SELECT company story', 20),
   ('who-we-are', 'hero.poster', 'Company hero poster', 'image', '', '/home-hero-poster.jpg', 'ACE SELECT company story', 21),
   ('who-we-are', 'story.eyebrow', 'Story eyebrow', 'text', 'WHO WE ARE', NULL, NULL, 29),
   ('who-we-are', 'story.headline', 'Story headline', 'text', 'INVENTIVE SPACES.\nDESIGN-TO-BUILD EXCELLENCE.', NULL, NULL, 30),
   ('who-we-are', 'story.image', 'Story image', 'image', '', '/images/projects/project-bkc-elobby.jpg', 'Modern Commercial Workplace Architecture', 31),
   ('services', 'hero.image', 'Services hero image', 'image', '', NULL, 'Services hero', 8),
+  ('services', 'hero.headline', 'Services hero headline', 'text', 'END-TO-END SOLUTIONS FOR EVERY SPACE.', NULL, NULL, 10),
+  ('services', 'hero.intro', 'Services introduction', 'text', 'From branding and retail execution to commercial interiors, activations and rebranding, ACE SELECT delivers integrated solutions designed for scale.', NULL, NULL, 20),
+  ('industries', 'hero.eyebrow', 'Industries eyebrow', 'text', 'SECTORS WE SERVE', NULL, NULL, 10),
+  ('industries', 'hero.headline', 'Industries hero headline', 'text', 'EXPERTISE ACROSS INDUSTRIES', NULL, NULL, 20),
   ('industries', 'hero.intro', 'Industries introduction', 'text', 'We bring specialized knowledge and architectural precision to diverse sectors, creating impactful environments for leading global brands.', NULL, NULL, 21),
   ('projects', 'hero.eyebrow', 'Projects eyebrow', 'text', 'AUTHENTIC COMPANY PORTFOLIO', NULL, NULL, 9),
-  ('contact', 'hero.eyebrow', 'Contact eyebrow', 'text', 'CONTACT US', NULL, NULL, 19)
+  ('projects', 'hero.headline', 'Projects hero headline', 'text', 'PROJECTS THAT MAKE AN IMPACT.', NULL, NULL, 10),
+  ('projects', 'hero.intro', 'Projects introduction', 'text', 'Explore ACE SELECT installations across active LED, digital signage, branding and commercial environments.', NULL, NULL, 20),
+  ('contact', 'hero.eyebrow', 'Contact eyebrow', 'text', 'CONTACT US', NULL, NULL, 10),
+  ('contact', 'hero.headline', 'Contact hero headline', 'text', 'START A CONVERSATION', NULL, NULL, 20),
+  ('contact', 'hero.intro', 'Contact introduction', 'text', 'Ready to elevate your brand? Reach out and let''s discuss your vision and spatial requirements.', NULL, NULL, 30)
 ON CONFLICT (page_slug, content_key) DO NOTHING;
+
+COMMIT;

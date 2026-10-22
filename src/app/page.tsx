@@ -15,6 +15,7 @@ import {
   getPageContent,
   getPageContentValue,
   getPageContentMedia,
+  getHomepageSolutions,
 } from "@/lib/cms-service";
 
 export const dynamic = "force-dynamic";
@@ -44,8 +45,24 @@ const DEFAULT_CLIENTS = [
   { name: "Punjab & Sindh Bank", tag: "Public Sector", tint_color: "#D97706" },
 ];
 
+const TESTIMONIAL_AVATAR_THEMES = [
+  "from-[#283A97] to-[#4A60D4]",
+  "from-[#0F766E] to-[#14B8A6]",
+  "from-[#9A3412] to-[#F97316]",
+] as const;
+
+function getInitials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "AC";
+}
+
 export default async function HomePage() {
-  const [hero, stats, about, processSteps, panIndia, clients, testimonials, pageContent] = await Promise.all([
+  const [hero, stats, about, processSteps, panIndia, clients, testimonials, pageContent, homepageSolutions] = await Promise.all([
     getHeroContent(),
     getHomeStats(),
     getHomeAbout(),
@@ -54,6 +71,7 @@ export default async function HomePage() {
     getClients(),
     getTestimonials(),
     getPageContent("home"),
+    getHomepageSolutions(),
   ]);
 
   const clientList = clients && clients.length > 0 ? clients : DEFAULT_CLIENTS;
@@ -65,7 +83,9 @@ export default async function HomePage() {
     subheadline: getPageContentValue(pageContent, "hero.subheadline", hero.subheadline),
     bottom_tagline: getPageContentValue(pageContent, "hero.bottom_tagline", hero.bottom_tagline),
     background_video_url: getPageContentMedia(pageContent, "hero.background", hero.background_video_url || "/videos/homepage-hero.mp4"),
-    poster_url: getPageContentMedia(pageContent, "hero.poster", hero.poster_url || ""),
+    poster_url: (hero.poster_url && hero.poster_url !== "/home-hero-poster.jpg")
+      ? hero.poster_url
+      : getPageContentMedia(pageContent, "hero.poster", hero.poster_url || ""),
   };
   const editableAbout = {
     ...about,
@@ -233,43 +253,58 @@ export default async function HomePage() {
                    <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">{getPageContentValue(pageContent, "products.eyebrow", "OUR PRODUCTS & SOLUTIONS")}</span>
                 </div>
                 <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 tracking-tight">
-                   {getPageContentValue(pageContent, "products.headline", "HARDWARE, SIGNAGE\n& CLOUD CMS.").split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
+                   {getPageContentValue(pageContent, "products.headline", "HARDWARE, SIGNAGE\n& CLOUD CMS.")
+                     .replace(/\\n/g, "\n")
+                     .split("\n")
+                     .map((line, index) => <span key={index}>{index > 0 && <br />}{line}</span>)}
                 </h2>
               </div>
               <div className="lg:max-w-md flex flex-col items-start lg:items-end gap-6">
                 <p className="text-neutral-600 font-body text-base lg:text-right">
                    {getPageContentValue(pageContent, "products.intro", "From active indoor & outdoor LED displays and 4K Android standees to architectural signage and secure Jio Software CMS, explore our end-to-end directory.")}
                 </p>
-                <a href="#products" className="inline-flex items-center gap-2 text-solvorry-DEFAULT font-display font-bold text-sm tracking-widest uppercase group hover:text-solvorry-dark">
+                <Link
+                  href={getPageContentValue(pageContent, "products.link_href", "/products")}
+                  className="inline-flex items-center gap-2 text-solvorry-DEFAULT font-display font-bold text-sm tracking-widest uppercase group hover:text-solvorry-dark"
+                >
                    {getPageContentValue(pageContent, "products.link_label", "EXPLORE PRODUCT DIRECTORY")}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </a>
+                </Link>
               </div>
             </div>
           </SectionReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-            {[
-              { title: "ACTIVE DIGITAL\nLED DISPLAYS", img: "/images/products/indoor-smd-page1.jpg" },
-              { title: "ANDROID DIGITAL\nSTANDEES (32\"-65\")", img: "/images/products/standee-banner.jpg" },
-              { title: "OUTDOOR HIGH BRIGHTNESS\nSMD SERIES", img: "/images/products/outdoor-smd-page1.jpg" },
-              { title: "INTERACTIVE &\nSELF-SERVICE KIOSKS", img: "/images/projects/project-bkc-elobby.jpg" },
-              { title: "STATIC SIGNAGE &\nGLOW SIGN BOARDS", img: "/images/projects/atm-kiosk-branding.jpg" },
-              { title: "SIGNAGE CMS ON\nJIO SOFTWARE", img: "/images/products/product-hierarchy.jpg" }
-            ].map((cap, i) => (
-              <SectionReveal key={cap.title} delay={i * 50} direction="up">
+            {homepageSolutions.map((cap, i) => {
+              const cardInner = (
                 <div className="block relative aspect-[4/3] group overflow-hidden bg-neutral-900">
-                  <img src={cap.img} alt={cap.title.replace('\n',' ')} className="w-full h-full object-cover opacity-80 group-hover:opacity-60 group-hover:scale-[1.03] transition-all duration-700" />
+                  <img
+                    src={cap.img}
+                    alt={cap.title.replace(/\\n/g, " ").replace(/\n/g, " ")}
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-60 group-hover:scale-[1.03] transition-all duration-700"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
                   <div className="absolute bottom-8 left-8 right-8 flex items-end justify-between">
                     <h3 className="text-white font-display font-bold text-xl tracking-wide whitespace-pre-line leading-tight">
-                      {cap.title}
+                      {cap.title.replace(/\\n/g, "\n")}
                     </h3>
                     <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-2 transition-transform duration-300" />
                   </div>
                 </div>
-              </SectionReveal>
-            ))}
+              );
+
+              return (
+                <SectionReveal key={cap.id || cap.title || i} delay={i * 50} direction="up">
+                  {cap.href ? (
+                    <Link href={cap.href} className="block cursor-pointer">
+                      {cardInner}
+                    </Link>
+                  ) : (
+                    cardInner
+                  )}
+                </SectionReveal>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -277,17 +312,17 @@ export default async function HomePage() {
       {/* 5. Pan India */}
       <section className="py-24 bg-[#F7F8FA] border-y border-neutral-200">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-            <div className="lg:col-span-5">
+          <div className="grid grid-cols-1 items-stretch gap-12 lg:grid-cols-12 lg:gap-16">
+            <div className="min-w-0 lg:col-span-5 lg:flex lg:flex-col lg:justify-center">
               <SectionReveal direction="left">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-8 h-[2px] bg-solvorry-DEFAULT" />
                    <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">{getPageContentValue(pageContent, "pan_india.eyebrow", "PAN INDIA PRESENCE")}</span>
                 </div>
-                <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 mb-6 tracking-tight">
+                <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 mb-6 tracking-tight leading-[1.05] whitespace-pre-line">
                    {getPageContentValue(pageContent, "pan_india.headline", "BUILT FOR SCALE.")}
                 </h2>
-                <p className="text-neutral-600 font-body text-lg leading-relaxed mb-10 max-w-md">
+                <p className="text-neutral-600 font-body text-lg leading-relaxed mb-10 max-w-xl lg:max-w-md">
                    {getPageContentValue(pageContent, "pan_india.intro", "From a single location to nationwide rollouts, our network enables consistent execution across India. With a strong on-ground team and trusted partners, we deliver high-quality installations anywhere in the country.")}
                 </p>
                 <Link href="/contact" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-solvorry-DEFAULT text-white font-display font-semibold transition-all hover:bg-solvorry-dark text-sm group">
@@ -296,31 +331,44 @@ export default async function HomePage() {
                 </Link>
               </SectionReveal>
             </div>
-            
-            <div className="lg:col-span-7 flex flex-col md:flex-row items-center gap-12">
-              <SectionReveal delay={100} className="w-full md:w-2/3 relative aspect-square">
-                <picture className="w-full h-full block">
-                  <source srcSet="/images/pan-india-map.webp" type="image/webp" />
-                  <img
-                    src="/images/pan-india-map.jpg"
-                    alt="ACE SELECT PAN India Network Map"
-                    className="w-full h-full object-contain rounded-xl drop-shadow-sm"
-                    loading="lazy"
-                  />
-                </picture>
-              </SectionReveal>
 
-              <SectionReveal delay={200} className="w-full md:w-1/3 flex flex-col gap-10">
-                {panIndia.map((stat, i) => (
-                  <div key={stat.id || stat.label || i} className="flex flex-col items-start gap-2">
-                    <div className="w-10 h-10 rounded-full border border-solvorry-DEFAULT/20 flex items-center justify-center mb-1">
-                       <MapPin className="w-4 h-4 text-solvorry-DEFAULT" />
-                    </div>
-                    <div className="font-display font-black text-4xl text-neutral-900">{stat.value}</div>
-                    <div className="text-neutral-500 font-display font-bold tracking-widest text-[10px] uppercase">{stat.label}</div>
+            <div className="min-w-0 lg:col-span-7">
+              <div className="grid min-w-0 grid-cols-1 items-stretch gap-6 md:grid-cols-[minmax(0,1fr)_minmax(12rem,0.4fr)] lg:gap-8">
+                <SectionReveal delay={100} className="min-w-0 w-full">
+                  <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm sm:p-5">
+                    <picture className="block h-full w-full">
+                      <source srcSet="/images/pan-india-map.webp" type="image/webp" />
+                      <img
+                        src="/images/pan-india-map.jpg"
+                        alt="ACE SELECT PAN India Network Map"
+                        className="h-full w-full object-contain"
+                        loading="lazy"
+                      />
+                    </picture>
                   </div>
-                ))}
-              </SectionReveal>
+                </SectionReveal>
+
+                <SectionReveal delay={200} className="min-w-0 w-full">
+                  <div className="grid grid-cols-2 gap-3 md:flex md:h-full md:flex-col">
+                    {panIndia.map((stat, i) => (
+                      <div
+                        key={stat.id || stat.label || i}
+                        className="flex min-h-[7.25rem] min-w-0 flex-col justify-center rounded-2xl border border-neutral-200 bg-white px-4 py-5 shadow-sm sm:px-5 md:min-h-0 md:flex-1"
+                      >
+                        <div className="mb-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-solvorry-DEFAULT/20 bg-solvorry-DEFAULT/5">
+                          <MapPin className="h-4 w-4 text-solvorry-DEFAULT" />
+                        </div>
+                        <div className="font-display text-3xl font-black leading-none text-neutral-900 sm:text-4xl">
+                          {stat.value}
+                        </div>
+                        <div className="mt-2 break-words text-[10px] font-display font-bold uppercase leading-tight tracking-[0.14em] text-neutral-500">
+                          {stat.label}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </SectionReveal>
+              </div>
             </div>
           </div>
         </div>
@@ -399,7 +447,7 @@ export default async function HomePage() {
             
             <div className="grid grid-cols-1 md:grid-cols-6 gap-8">
               {processSteps.map((step, i) => (
-                <SectionReveal key={step.number || i} delay={i * 100} className="relative flex flex-col items-center text-center">
+                <SectionReveal key={step.id || `step-${i}`} delay={i * 100} className="relative flex flex-col items-center text-center">
                   <div className="w-16 h-16 rounded-full bg-solvorry-DEFAULT flex items-center justify-center border-4 border-white mb-6 relative z-10 shadow-sm">
                     <span className="text-white font-display font-bold text-lg">{step.number || `0${i + 1}`}</span>
                   </div>
@@ -512,10 +560,10 @@ export default async function HomePage() {
                   <div
                     className="w-11 h-11 rounded-xl flex items-center justify-center relative shadow-[0_2px_5px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_1px_rgba(0,0,0,0.05)] border border-white/90 shrink-0"
                     style={{
-                      background: `linear-gradient(135deg, #ffffff 0%, #f1f5f9 60%, ${client.tint_color || (client as any).tint || "#283A97"}18 100%)`,
+                       background: `linear-gradient(135deg, #ffffff 0%, #f1f5f9 60%, ${client.tint_color || "#283A97"}18 100%)`,
                     }}
                   >
-                    <Landmark className="w-5 h-5 stroke-[2.2]" style={{ color: client.tint_color || (client as any).tint || "#283A97" }} />
+                     <Landmark className="w-5 h-5 stroke-[2.2]" style={{ color: client.tint_color || "#283A97" }} />
                   </div>
 
                   {/* Brand Name with 3D Extruded Lettering */}
@@ -545,11 +593,14 @@ export default async function HomePage() {
                    <span className="text-neutral-500 font-display font-bold tracking-[0.2em] text-xs uppercase">{getPageContentValue(pageContent, "testimonials.eyebrow", "TESTIMONIALS")}</span>
                 </div>
                 <h2 className="font-display font-black text-4xl md:text-5xl text-neutral-900 tracking-tight">
-                   {getPageContentValue(pageContent, "testimonials.headline", "WHAT OUR\nCLIENTS SAY.").split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
+                   {getPageContentValue(pageContent, "testimonials.headline", "WHAT OUR\nCLIENTS SAY.")
+                     .replace(/\\n/g, "\n")
+                     .split("\n")
+                     .map((line, index) => <span key={index}>{index > 0 && <br />}{line}</span>)}
                 </h2>
               </div>
               <div className="lg:max-w-md flex flex-col items-start lg:items-end gap-6">
-                <Link href="#" className="inline-flex items-center gap-2 text-solvorry-DEFAULT font-display font-bold text-sm tracking-widest uppercase group hover:text-solvorry-dark">
+                <Link href="/contact" className="inline-flex items-center gap-2 text-solvorry-DEFAULT font-display font-bold text-sm tracking-widest uppercase group hover:text-solvorry-dark">
                   VIEW ALL TESTIMONIALS
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -558,26 +609,35 @@ export default async function HomePage() {
           </SectionReveal>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((test, i) => (
-              <SectionReveal key={test.author_name || (test as any).name || i} delay={i * 100} direction="up">
-                <div className="bg-white p-10 border border-neutral-200 rounded-sm h-full flex flex-col">
-                  <span className="text-solvorry-DEFAULT font-display font-black text-6xl leading-none opacity-20 mb-4">&quot;</span>
-                  <p className="text-neutral-700 font-body text-base leading-relaxed flex-grow mb-8 font-medium">
-                    {test.quote}
-                  </p>
-                  <div className="flex items-center gap-4 mt-auto pt-6 border-t border-neutral-100">
-                    <div className="w-12 h-12 bg-neutral-200 rounded-full overflow-hidden">
-                       <img src={test.author_photo_url || `https://i.pravatar.cc/150?u=${test.author_name || (test as any).name}`} alt={test.author_name || (test as any).name} className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <h4 className="font-display font-bold text-neutral-900 text-sm">{test.author_name || (test as any).name}</h4>
-                      <p className="text-neutral-500 font-body text-xs">{test.author_title || (test as any).title}</p>
-                      <p className="text-neutral-900 font-display font-bold text-xs uppercase tracking-wider mt-0.5">{test.author_company || (test as any).company}</p>
-                    </div>
-                  </div>
-                </div>
-              </SectionReveal>
-            ))}
+             {testimonials.slice(0, 3).map((test, i) => {
+               const authorName = test.author_name?.trim() || "ACE SELECT Client";
+               const avatarTheme = TESTIMONIAL_AVATAR_THEMES[i % TESTIMONIAL_AVATAR_THEMES.length];
+
+               return (
+               <SectionReveal key={`${test.id || authorName}-${i}`} delay={i * 100} direction="up">
+                 <div className="bg-white p-10 border border-neutral-200 rounded-sm h-full flex flex-col">
+                   <span className="text-solvorry-DEFAULT font-display font-black text-6xl leading-none opacity-20 mb-4">&quot;</span>
+                   <p className="text-neutral-700 font-body text-base leading-relaxed flex-grow mb-8 font-medium">
+                     {test.quote}
+                   </p>
+                   <div className="flex items-center gap-4 mt-auto pt-6 border-t border-neutral-100">
+                     <div className={`w-12 h-12 rounded-full overflow-hidden shrink-0 bg-gradient-to-br ${avatarTheme} flex items-center justify-center text-white font-display font-bold text-sm tracking-wide shadow-sm`} aria-label={`${authorName} avatar`}>
+                        {test.author_photo_url ? (
+                          <img src={test.author_photo_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span aria-hidden="true">{getInitials(authorName)}</span>
+                        )}
+                     </div>
+                     <div>
+                       <h4 className="font-display font-bold text-neutral-900 text-sm">{authorName}</h4>
+                       <p className="text-neutral-500 font-body text-xs">{test.author_title}</p>
+                       <p className="text-neutral-900 font-display font-bold text-xs uppercase tracking-wider mt-0.5">{test.author_company}</p>
+                     </div>
+                   </div>
+                 </div>
+               </SectionReveal>
+               );
+             })}
           </div>
         </div>
       </section>
@@ -592,7 +652,10 @@ export default async function HomePage() {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col md:flex-row items-center justify-between">
           <SectionReveal className="max-w-2xl">
             <h2 className="font-display font-black text-5xl md:text-7xl mb-6 tracking-tight leading-[1.05]">
-               {getPageContentValue(pageContent, "cta.headline", "LET'S BUILD\nWHAT'S NEXT.").split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
+               {getPageContentValue(pageContent, "cta.headline", "LET'S BUILD\nWHAT'S NEXT.")
+                 .replace(/\\n/g, "\n")
+                 .split("\n")
+                 .map((line, index) => <span key={index}>{index > 0 && <br />}{line}</span>)}
             </h2>
             <p className="text-white/80 font-body text-lg md:text-xl mb-10 max-w-xl font-light">
                {getPageContentValue(pageContent, "cta.body", "Partner with ACE SELECT for innovative display, branding and retail solutions that make your brand impossible to ignore.")}

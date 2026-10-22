@@ -49,6 +49,7 @@ const NAV_ITEMS = [
       { label: "Hero Section", href: "/admin/homepage/hero" },
       { label: "Stats & Numbers", href: "/admin/homepage/stats" },
       { label: "About Section", href: "/admin/homepage/about" },
+      { label: "Products & Solutions", href: "/admin/homepage/products" },
       { label: "Process Steps", href: "/admin/homepage/process" },
       { label: "Featured Projects", href: "/admin/homepage/featured" },
       { label: "Pan-India Stats", href: "/admin/homepage/pan-india" },

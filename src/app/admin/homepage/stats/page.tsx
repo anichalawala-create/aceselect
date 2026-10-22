@@ -21,7 +21,15 @@ export default function AdminStatsPage() {
         const res = await fetch("/api/admin/content?section=stats");
         const json = await res.json();
         if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          setStats(json.data);
+          const sanitized = json.data.map((s: any) => ({
+            ...s,
+            label: s.label ?? "",
+            end_value: typeof s.end_value === "number" ? s.end_value : (parseInt(s.end_value) || 0),
+            prefix: s.prefix ?? "",
+            suffix: s.suffix ?? "",
+            icon_name: s.icon_name ?? "",
+          }));
+          setStats(sanitized);
         }
       } catch (err) {
         console.error("Failed to load stats:", err);
@@ -85,27 +93,27 @@ export default function AdminStatsPage() {
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">Label</label>
-                <input value={stat.label} onChange={(e) => update(stat.id, "label", e.target.value)} className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#283A97]/20 focus:border-[#283A97]" />
+                <input value={stat.label ?? ""} onChange={(e) => update(stat.id, "label", e.target.value)} className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#283A97]/20 focus:border-[#283A97]" />
               </div>
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">Value</label>
-                <input type="number" value={stat.end_value} onChange={(e) => update(stat.id, "end_value", parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#283A97]/20 focus:border-[#283A97]" />
+                <input type="number" value={stat.end_value ?? 0} onChange={(e) => update(stat.id, "end_value", isNaN(parseInt(e.target.value)) ? 0 : parseInt(e.target.value))} className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#283A97]/20 focus:border-[#283A97]" />
               </div>
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">Prefix</label>
-                <input value={stat.prefix} onChange={(e) => update(stat.id, "prefix", e.target.value)} placeholder="₹" className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none" />
+                <input value={stat.prefix ?? ""} onChange={(e) => update(stat.id, "prefix", e.target.value)} placeholder="₹" className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none" />
               </div>
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">Suffix</label>
-                <input value={stat.suffix} onChange={(e) => update(stat.id, "suffix", e.target.value)} placeholder="+" className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none" />
+                <input value={stat.suffix ?? ""} onChange={(e) => update(stat.id, "suffix", e.target.value)} placeholder="+" className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none" />
               </div>
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">Icon</label>
-                <input value={stat.icon_name} onChange={(e) => update(stat.id, "icon_name", e.target.value)} placeholder="Building2" className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none" />
+                <input value={stat.icon_name ?? ""} onChange={(e) => update(stat.id, "icon_name", e.target.value)} placeholder="Building2" className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-lg focus:outline-none" />
               </div>
             </div>
             <div className="mt-3 p-3 bg-neutral-50 rounded-lg border border-neutral-100 text-center">
-              <span className="text-2xl font-black text-[#283A97]">{stat.prefix}{stat.end_value.toLocaleString()}{stat.suffix}</span>
+              <span className="text-2xl font-black text-[#283A97]">{stat.prefix ?? ""}{(stat.end_value ?? 0).toLocaleString()}{stat.suffix ?? ""}</span>
               <p className="text-xs text-neutral-400 font-semibold uppercase tracking-wider mt-1">{stat.label}</p>
             </div>
           </div>

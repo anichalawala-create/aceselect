@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getCurrentAdminUser, getSupabaseAdmin, isSupabaseAdminError } from "@/lib/auth";
-import { syncHomeHeroVideoCache, syncHomeHeroVideoPageContent } from "@/lib/cms-service";
+import { syncHomeHeroVideoCache, syncHomeHeroVideoPageContent, syncCompanyVideoCache } from "@/lib/cms-service";
 import fs from "fs";
 import path from "path";
 
@@ -51,7 +52,13 @@ export async function GET(req: Request) {
     // 1. HERO
     if (section === "hero") {
       try {
-        const { data: dbHero, error } = await supabase.from("hero_content").select("*").limit(1).maybeSingle();
+        const { data: heroRows, error } = await supabase
+          .from("hero_content")
+          .select("*")
+          .eq("is_active", true)
+          .order("updated_at", { ascending: false })
+          .limit(1);
+        const dbHero = heroRows?.[0];
         if (dbHero && !error) {
           const merged = {
             ...(cache.hero || {}),
@@ -134,8 +141,8 @@ export async function GET(req: Request) {
             ...(cache.company || {}),
             vision: dbComp.vision || cache.company?.vision,
             mission: dbComp.mission || cache.company?.mission,
-            videoUrl: cache.company?.videoUrl || "/videos/company-bg.mp4",
-            posterUrl: cache.company?.posterUrl || "",
+            videoUrl: dbComp.videoUrl || cache.company?.videoUrl || "/company-hero.mp4",
+            posterUrl: dbComp.posterUrl || cache.company?.posterUrl || "",
           };
           return NextResponse.json({ success: true, data: merged });
         }
@@ -253,6 +260,47 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: true, data: cache.products || [] });
     }
 
+    // 13b. PRODUCT CATEGORIES
+    if (section === "product_categories" || section === "categories") {
+      try {
+        const { data: dbCategories, error } = await supabase.from("cms_product_categories").select("*").order("sort_order");
+        if (dbCategories && dbCategories.length > 0 && !error) {
+          return NextResponse.json({ success: true, data: dbCategories });
+        }
+      } catch (err) {
+        console.warn("DB product_categories fetch error:", err);
+      }
+      return NextResponse.json({ success: true, data: cache.product_categories || [] });
+    }
+
+    // 14. HOMEPAGE PRODUCTS & SOLUTIONS
+    if (section === "homepage_solutions" || section === "homepage_products") {
+      const solutions = cache.homepage_solutions || [
+        { id: "1", title: "ACTIVE DIGITAL\nLED DISPLAYS", img: "/images/products/indoor-smd-page1.jpg", href: "/products", sort_order: 1 },
+        { id: "2", title: "ANDROID DIGITAL\nSTANDEES (32\"-65\")", img: "/images/products/standee-banner.jpg", href: "/products", sort_order: 2 },
+        { id: "3", title: "OUTDOOR HIGH BRIGHTNESS\nSMD SERIES", img: "/images/products/outdoor-smd-page1.jpg", href: "/products", sort_order: 3 },
+        { id: "4", title: "INTERACTIVE &\nSELF-SERVICE KIOSKS", img: "/images/projects/project-bkc-elobby.jpg", href: "/products", sort_order: 4 },
+        { id: "5", title: "STATIC SIGNAGE &\nGLOW SIGN BOARDS", img: "/images/projects/atm-kiosk-branding.jpg", href: "/products", sort_order: 5 },
+        { id: "6", title: "SIGNAGE CMS ON\nJIO SOFTWARE", img: "/images/products/product-hierarchy.jpg", href: "/products", sort_order: 6 },
+      ];
+      const pageContent = cache.page_content || [];
+      const getVal = (k: string, fb: string) => {
+        const row = pageContent.find((r: any) => r.page_slug === "home" && r.content_key === k);
+        return row?.value || fb;
+      };
+      return NextResponse.json({
+        success: true,
+        data: {
+          eyebrow: getVal("products.eyebrow", "OUR PRODUCTS & SOLUTIONS"),
+          headline: getVal("products.headline", "HARDWARE, SIGNAGE\n& CLOUD CMS."),
+          intro: getVal("products.intro", "From active indoor & outdoor LED displays and 4K Android standees to architectural signage and secure Jio Software CMS, explore our end-to-end directory."),
+          link_label: getVal("products.link_label", "EXPLORE PRODUCT DIRECTORY"),
+          link_href: getVal("products.link_href", "/products"),
+          cards: solutions,
+        },
+      });
+    }
+
     // Default: return all cache
     return NextResponse.json({ success: true, data: cache });
   } catch (error: unknown) {
@@ -303,19 +351,29 @@ export async function POST(req: Request) {
       };
 
       // The public homepage resolves this page-content row before hero_content.
-      // Keep both CMS paths pointed at the same saved video.
-      if (typeof data.background_video_url === "string") {
-        syncHomeHeroVideoCache(data.background_video_url);
+      // Keep both CMS paths pointed at the same saved video and poster.
+      if (typeof data.background_video_url === "string" || typeof data.poster_url === "string") {
+        syncHomeHeroVideoCache(data.background_video_url, data.poster_url);
       }
 
-      const { data: existing } = await supabase.from("hero_content").select("id").limit(1);
-      if (existing && existing.length > 0) {
-        await supabase.from("hero_content").update(heroFields).eq("id", existing[0].id);
+      const { data: existingRows, error: lookupError } = await supabase
+        .from("hero_content")
+        .select("id")
+        .eq("is_active", true)
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      if (lookupError) throw lookupError;
+
+      const existing = existingRows?.[0];
+      if (existing?.id) {
+        const { error } = await supabase.from("hero_content").update(heroFields).eq("id", existing.id);
+        if (error) throw error;
       } else {
-        await supabase.from("hero_content").insert(heroFields);
+        const { error } = await supabase.from("hero_content").insert(heroFields);
+        if (error) throw error;
       }
-      if (typeof data.background_video_url === "string") {
-        await syncHomeHeroVideoPageContent(supabase, data.background_video_url);
+      if (typeof data.background_video_url === "string" || typeof data.poster_url === "string") {
+        await syncHomeHeroVideoPageContent(supabase, data.background_video_url, data.poster_url);
       }
     } else if (section === "about") {
       const aboutFields = {
@@ -394,10 +452,18 @@ export async function POST(req: Request) {
         }
       }
     } else if (section === "company") {
-      const compRow = {
+      const compRow: Record<string, unknown> = {
         vision: data.vision,
         mission: data.mission,
       };
+      // Persist videoUrl / posterUrl in the DB column if the table supports it
+      if (typeof data.videoUrl === "string") compRow.videoUrl = data.videoUrl;
+      if (typeof data.posterUrl === "string") compRow.posterUrl = data.posterUrl;
+      // Sync the video to the who-we-are page-content cache so the public page
+      // picks up the change without a separate Page Content editor save.
+      if (typeof data.videoUrl === "string") {
+        syncCompanyVideoCache(data.videoUrl);
+      }
       const { data: existing } = await supabase.from("company_page").select("id").limit(1);
       if (existing && existing.length > 0) {
         await supabase.from("company_page").update(compRow).eq("id", existing[0].id);
@@ -470,12 +536,13 @@ export async function POST(req: Request) {
             author_name: t.author_name,
             author_title: t.author_title,
             author_company: t.author_company,
+            author_photo_url: t.author_photo_url || null,
             is_featured: !!t.is_featured,
             is_active: t.is_active !== false,
             sort_order: i + 1,
           };
           if (isUuid(t.id)) {
-            await supabase.from("cms_testimonials").update(row).eq("id", t.id);
+            await supabase.from("cms_testimonials").upsert({ id: t.id, ...row }, { onConflict: "id" });
           } else {
             const { data: matched } = await supabase.from("cms_testimonials").select("id").eq("author_company", t.author_company).limit(1);
             if (matched && matched.length > 0) {
@@ -536,26 +603,135 @@ export async function POST(req: Request) {
       }
     } else if (section === "products") {
       if (Array.isArray(data)) {
+        updateCacheSection("products", data);
         for (let i = 0; i < data.length; i++) {
           const p = data[i];
           const slug = p.slug || (p.name ? p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") : `product-${i}`);
           const row = {
             name: p.name,
             slug,
+            category: p.category || "Active Indoor LED",
             tagline: p.tagline || "",
+            badge: p.badge || "",
             description: p.description || "",
+            image_url: p.image_url || p.img || p.image || "",
             specs: Array.isArray(p.specs) ? p.specs.map((s: any) => typeof s === "string" ? { label: "Spec", value: s } : s) : [],
             sort_order: i + 1,
             is_featured: !!p.is_featured,
-            is_active: true,
+            is_active: p.is_active !== false,
           };
-          if (isUuid(p.id)) {
-            await supabase.from("cms_products").update(row).eq("id", p.id);
-          } else {
-            await supabase.from("cms_products").upsert(row, { onConflict: "slug" });
+          try {
+            if (isUuid(p.id)) {
+              await supabase.from("cms_products").update(row).eq("id", p.id);
+            } else {
+              await supabase.from("cms_products").upsert(row, { onConflict: "slug" });
+            }
+          } catch (e) {
+            console.warn("DB cms_products upsert warning:", e);
           }
         }
       }
+    } else if (section === "product_categories" || section === "categories") {
+      if (Array.isArray(data)) {
+        updateCacheSection("product_categories", data);
+        for (let i = 0; i < data.length; i++) {
+          const c = data[i];
+          const slug = c.slug || (c.name ? c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") : `cat-${i}`);
+          const row = {
+            name: c.name,
+            slug,
+            icon: c.icon || "Monitor",
+            description: c.description || "",
+            badge: c.badge || "",
+            sort_order: i + 1,
+            is_active: c.is_active !== false,
+          };
+          try {
+            if (isUuid(c.id)) {
+              await supabase.from("cms_product_categories").update(row).eq("id", c.id);
+            } else {
+              await supabase.from("cms_product_categories").upsert(row, { onConflict: "slug" });
+            }
+          } catch (e) {
+            console.warn("DB cms_product_categories upsert warning:", e);
+          }
+        }
+      }
+    } else if (section === "homepage_solutions" || section === "homepage_products") {
+      const { eyebrow, headline, intro, link_label, link_href, cards } = data || {};
+      const currentCache = readCache();
+
+      if (Array.isArray(cards)) {
+        currentCache.homepage_solutions = cards;
+      }
+
+      // Sync the text overrides to page_content in cache and Supabase
+      const textFields = [
+        { key: "products.eyebrow", label: "Products eyebrow", value: eyebrow || "OUR PRODUCTS & SOLUTIONS" },
+        { key: "products.headline", label: "Products headline", value: headline || "HARDWARE, SIGNAGE\n& CLOUD CMS." },
+        { key: "products.intro", label: "Products introduction", value: intro || "From active indoor & outdoor LED displays and 4K Android standees to architectural signage and secure Jio Software CMS, explore our end-to-end directory." },
+        { key: "products.link_label", label: "Products link label", value: link_label || "EXPLORE PRODUCT DIRECTORY" },
+        { key: "products.link_href", label: "Products link target", value: link_href || "/products" },
+      ];
+
+      const rows: any[] = Array.isArray(currentCache.page_content) ? [...currentCache.page_content] : [];
+      const now = new Date().toISOString();
+
+      for (const field of textFields) {
+        const idx = rows.findIndex((r: any) => r.page_slug === "home" && r.content_key === field.key);
+        if (idx >= 0) {
+          rows[idx] = { ...rows[idx], value: field.value, updated_at: now };
+        } else {
+          rows.push({
+            id: `local-home-${field.key.replace('.', '-')}`,
+            page_slug: "home",
+            content_key: field.key,
+            label: field.label,
+            content_type: "text",
+            value: field.value,
+            media_url: null,
+            alt_text: null,
+            sort_order: 50,
+            is_active: true,
+            created_at: now,
+            updated_at: now,
+          });
+        }
+
+        try {
+          const { data: matched } = await supabase
+            .from("cms_page_content")
+            .select("id")
+            .eq("page_slug", "home")
+            .eq("content_key", field.key)
+            .maybeSingle();
+
+          if (matched?.id) {
+            await supabase.from("cms_page_content").update({ value: field.value, updated_at: now }).eq("id", matched.id);
+          } else {
+            await supabase.from("cms_page_content").insert({
+              page_slug: "home",
+              content_key: field.key,
+              label: field.label,
+              content_type: "text",
+              value: field.value,
+              sort_order: 50,
+              is_active: true,
+            });
+          }
+        } catch (e) {
+          console.warn(`[CMS] Error updating cms_page_content for ${field.key}:`, e);
+        }
+      }
+
+      currentCache.page_content = rows;
+      writeCache(currentCache);
+    }
+
+    try {
+      revalidatePath("/");
+    } catch (e) {
+      // ignore in non-request contexts
     }
 
     return NextResponse.json({ success: true, message: `Section '${section}' saved successfully.` });
@@ -587,8 +763,9 @@ export async function DELETE(req: Request) {
     const cache = readCache();
 
     // Remove from local cache
-    if (Array.isArray(cache[section])) {
-      cache[section] = cache[section].filter((item: any) => item.id !== id && item.name !== id && item.slug !== id);
+    const cacheKey = section === "categories" ? "product_categories" : section;
+    if (Array.isArray(cache[cacheKey])) {
+      cache[cacheKey] = cache[cacheKey].filter((item: any) => item.id !== id && item.name !== id && item.slug !== id);
       writeCache(cache);
     }
 
@@ -600,6 +777,8 @@ export async function DELETE(req: Request) {
       certifications: "cms_certifications",
       products: "cms_products",
       stats: "home_stats",
+      product_categories: "cms_product_categories",
+      categories: "cms_product_categories",
     };
 
     const tableName = tableMap[section];

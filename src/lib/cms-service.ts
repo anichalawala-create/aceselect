@@ -88,16 +88,18 @@ export function writePageContentCache(rows: PageContent[]): void {
 }
 
 const HOME_HERO_BACKGROUND_KEY = "hero.background";
+const HOME_HERO_POSTER_KEY = "hero.poster";
 
 /**
  * Keep the legacy Homepage > Hero media save path in sync with the page-content
  * cache used by public pages. The page-content row remains the public override,
  * so the Page Content editor keeps its existing precedence.
  */
-export function syncHomeHeroVideoCache(videoUrl: unknown): void {
-  if (typeof videoUrl !== "string") return;
+export function syncHomeHeroVideoCache(videoUrl: unknown, posterUrl?: unknown): void {
+  if (typeof videoUrl !== "string" && typeof posterUrl !== "string") return;
 
-  const normalizedUrl = videoUrl.trim();
+  const normalizedVideoUrl = typeof videoUrl === "string" ? videoUrl.trim() : null;
+  const normalizedPosterUrl = typeof posterUrl === "string" ? posterUrl.trim() : null;
   const rows = readPageContentCache();
   let cache: Record<string, unknown> = {};
   try {
@@ -111,11 +113,90 @@ export function syncHomeHeroVideoCache(videoUrl: unknown): void {
     console.warn("[CMS] Error reading hero cache:", error);
   }
   const cachedHero = cache.hero && typeof cache.hero === "object" && !Array.isArray(cache.hero)
-    ? cache.hero as Record<string, unknown>
+    ? (cache.hero as Record<string, unknown>)
     : {};
   const now = new Date().toISOString();
+
+  if (normalizedVideoUrl) {
+    const existingIndex = rows.findIndex(
+      (row) => row.page_slug === "home" && row.content_key === HOME_HERO_BACKGROUND_KEY,
+    );
+    if (existingIndex >= 0) {
+      rows[existingIndex] = {
+        ...rows[existingIndex],
+        content_type: "video",
+        value: normalizedVideoUrl,
+        media_url: normalizedVideoUrl || null,
+        updated_at: now,
+      };
+    } else {
+      rows.push({
+        id: "local-home-hero-background",
+        page_slug: "home",
+        content_key: HOME_HERO_BACKGROUND_KEY,
+        label: "Hero background video",
+        content_type: "video",
+        value: normalizedVideoUrl,
+        media_url: normalizedVideoUrl || null,
+        alt_text: "ACE SELECT hero video",
+        sort_order: 30,
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+    cachedHero.background_video_url = normalizedVideoUrl;
+  }
+
+  if (normalizedPosterUrl) {
+    const posterIndex = rows.findIndex(
+      (row) => row.page_slug === "home" && row.content_key === HOME_HERO_POSTER_KEY,
+    );
+    if (posterIndex >= 0) {
+      rows[posterIndex] = {
+        ...rows[posterIndex],
+        content_type: "image",
+        value: normalizedPosterUrl,
+        media_url: normalizedPosterUrl || null,
+        updated_at: now,
+      };
+    } else {
+      rows.push({
+        id: "local-home-hero-poster",
+        page_slug: "home",
+        content_key: HOME_HERO_POSTER_KEY,
+        label: "Hero poster image",
+        content_type: "image",
+        value: normalizedPosterUrl,
+        media_url: normalizedPosterUrl || null,
+        alt_text: "ACE SELECT homepage hero poster",
+        sort_order: 31,
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+    cachedHero.poster_url = normalizedPosterUrl;
+  }
+
+  cache.page_content = rows;
+  cache.hero = cachedHero;
+  fs.writeFileSync(CMS_CACHE_PATH, `${JSON.stringify(cache, null, 2)}\n`, "utf-8");
+}
+
+/**
+ * Keep the Who We Are page hero video in sync with the company section cache.
+ * When admin saves a video via the Company admin panel, this mirrors it to the
+ * who-we-are page-content row so the public page picks it up immediately.
+ */
+export function syncCompanyVideoCache(videoUrl: unknown): void {
+  if (typeof videoUrl !== "string") return;
+
+  const normalizedUrl = videoUrl.trim();
+  const rows = readPageContentCache();
+  const now = new Date().toISOString();
   const existingIndex = rows.findIndex(
-    (row) => row.page_slug === "home" && row.content_key === HOME_HERO_BACKGROUND_KEY,
+    (row) => row.page_slug === "who-we-are" && row.content_key === "hero.video",
   );
 
   if (existingIndex >= 0) {
@@ -128,23 +209,33 @@ export function syncHomeHeroVideoCache(videoUrl: unknown): void {
     };
   } else {
     rows.push({
-      id: "local-home-hero-background",
-      page_slug: "home",
-      content_key: HOME_HERO_BACKGROUND_KEY,
-      label: "Hero background video",
+      id: "local-who-we-are-hero-video",
+      page_slug: "who-we-are",
+      content_key: "hero.video",
+      label: "Who We Are hero background video",
       content_type: "video",
       value: normalizedUrl,
       media_url: normalizedUrl || null,
-      alt_text: "ACE SELECT hero video",
-      sort_order: 30,
+      alt_text: "ACE SELECT company hero video",
+      sort_order: 10,
       is_active: true,
       created_at: now,
       updated_at: now,
     });
   }
 
+  let cache: Record<string, unknown> = {};
+  try {
+    if (fs.existsSync(CMS_CACHE_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(CMS_CACHE_PATH, "utf-8"));
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        cache = parsed as Record<string, unknown>;
+      }
+    }
+  } catch (error) {
+    console.warn("[CMS] Error reading company video cache:", error);
+  }
   cache.page_content = rows;
-  cache.hero = { ...cachedHero, background_video_url: normalizedUrl };
   fs.writeFileSync(CMS_CACHE_PATH, `${JSON.stringify(cache, null, 2)}\n`, "utf-8");
 }
 
@@ -155,44 +246,82 @@ export function syncHomeHeroVideoCache(videoUrl: unknown): void {
 export async function syncHomeHeroVideoPageContent(
   supabase: SupabaseClient,
   videoUrl: unknown,
+  posterUrl?: unknown,
 ): Promise<void> {
-  if (typeof videoUrl !== "string") return;
+  const normalizedVideoUrl = typeof videoUrl === "string" ? videoUrl.trim() : null;
+  const normalizedPosterUrl = typeof posterUrl === "string" ? posterUrl.trim() : null;
 
-  const normalizedUrl = videoUrl.trim();
-  const { data: existing, error: lookupError } = await supabase
-    .from("cms_page_content")
-    .select("id")
-    .eq("page_slug", "home")
-    .eq("content_key", HOME_HERO_BACKGROUND_KEY)
-    .maybeSingle();
-
-  if (lookupError) throw lookupError;
-
-  const mediaFields = {
-    content_type: "video",
-    value: normalizedUrl,
-    media_url: normalizedUrl || null,
-  };
-
-  if (existing?.id) {
-    const { error } = await supabase
+  if (normalizedVideoUrl) {
+    const { data: existing, error: lookupError } = await supabase
       .from("cms_page_content")
-      .update(mediaFields)
-      .eq("id", existing.id);
-    if (error) throw error;
-    return;
+      .select("id")
+      .eq("page_slug", "home")
+      .eq("content_key", HOME_HERO_BACKGROUND_KEY)
+      .maybeSingle();
+
+    if (lookupError) throw lookupError;
+
+    const mediaFields = {
+      content_type: "video",
+      value: normalizedVideoUrl,
+      media_url: normalizedVideoUrl || null,
+    };
+
+    if (existing?.id) {
+      const { error } = await supabase
+        .from("cms_page_content")
+        .update(mediaFields)
+        .eq("id", existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from("cms_page_content").insert({
+        page_slug: "home",
+        content_key: HOME_HERO_BACKGROUND_KEY,
+        label: "Hero background video",
+        ...mediaFields,
+        alt_text: "ACE SELECT hero video",
+        sort_order: 30,
+        is_active: true,
+      });
+      if (error) throw error;
+    }
   }
 
-  const { error } = await supabase.from("cms_page_content").insert({
-    page_slug: "home",
-    content_key: HOME_HERO_BACKGROUND_KEY,
-    label: "Hero background video",
-    ...mediaFields,
-    alt_text: "ACE SELECT hero video",
-    sort_order: 30,
-    is_active: true,
-  });
-  if (error) throw error;
+  if (normalizedPosterUrl) {
+    const { data: existingPoster, error: posterLookupError } = await supabase
+      .from("cms_page_content")
+      .select("id")
+      .eq("page_slug", "home")
+      .eq("content_key", HOME_HERO_POSTER_KEY)
+      .maybeSingle();
+
+    if (posterLookupError) throw posterLookupError;
+
+    const posterFields = {
+      content_type: "image",
+      value: normalizedPosterUrl,
+      media_url: normalizedPosterUrl || null,
+    };
+
+    if (existingPoster?.id) {
+      const { error } = await supabase
+        .from("cms_page_content")
+        .update(posterFields)
+        .eq("id", existingPoster.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from("cms_page_content").insert({
+        page_slug: "home",
+        content_key: HOME_HERO_POSTER_KEY,
+        label: "Hero poster image",
+        ...posterFields,
+        alt_text: "ACE SELECT homepage hero poster",
+        sort_order: 31,
+        is_active: true,
+      });
+      if (error) throw error;
+    }
+  }
 }
 
 /** Mirror a Page Content editor save into the legacy hero_content row. */
@@ -202,15 +331,17 @@ export async function syncHomeHeroVideoHeroContent(
 ): Promise<void> {
   if (typeof videoUrl !== "string") return;
 
-  const { data: existing, error: lookupError } = await supabase
+  const { data: existingRows, error: lookupError } = await supabase
     .from("hero_content")
     .select("id")
-    .limit(1)
-    .maybeSingle();
+    .eq("is_active", true)
+    .order("updated_at", { ascending: false })
+    .limit(1);
 
   if (lookupError) throw lookupError;
 
   const mediaFields = { background_video_url: videoUrl.trim() || null };
+  const existing = existingRows?.[0];
   if (existing?.id) {
     const { error } = await supabase
       .from("hero_content")
@@ -412,9 +543,15 @@ const FALLBACK_HERO: HeroContent = {
 
 export async function getHeroContent(): Promise<HeroContent> {
   const cacheHero = readCacheSection<HeroContent>("hero", FALLBACK_HERO);
-  const data = await fetchFromDB<HeroContent>("hero_content", async (supabase) =>
-    supabase.from("hero_content").select("*").eq("is_active", true).limit(1).maybeSingle()
+  const rows = await fetchFromDB<HeroContent[]>("hero_content", async (supabase) =>
+    supabase
+      .from("hero_content")
+      .select("*")
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false })
+      .limit(1)
   );
+  const data = rows?.[0];
   if (data) {
     return {
       ...FALLBACK_HERO,
@@ -479,12 +616,44 @@ const FALLBACK_STATS: HomeStat[] = [
   { id: "4", icon_name: "Calendar", end_value: 1996, suffix: "", label: "SINCE YEAR", sort_order: 4, is_active: true },
 ];
 
+function stableSortByOrder<T extends { sort_order?: number }>(rows: readonly T[]): T[] {
+  return rows
+    .map((row, index) => ({ row, index }))
+    .sort((first, second) => {
+      const firstOrder = typeof first.row.sort_order === "number" && Number.isFinite(first.row.sort_order)
+        ? first.row.sort_order
+        : Number.POSITIVE_INFINITY;
+      const secondOrder = typeof second.row.sort_order === "number" && Number.isFinite(second.row.sort_order)
+        ? second.row.sort_order
+        : Number.POSITIVE_INFINITY;
+      return firstOrder - secondOrder || first.index - second.index;
+    })
+    .map(({ row }) => row);
+}
+
+function normalizeCmsLabel(label: string): string {
+  return label.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function selectHomeStats(rows: readonly HomeStat[]): HomeStat[] {
+  const seenLabels = new Set<string>();
+
+  return stableSortByOrder(rows)
+    .filter((stat) => {
+      const normalizedLabel = normalizeCmsLabel(stat.label);
+      if (seenLabels.has(normalizedLabel)) return false;
+      seenLabels.add(normalizedLabel);
+      return true;
+    })
+    .slice(0, 4);
+}
+
 export async function getHomeStats(): Promise<HomeStat[]> {
   const data = await fetchFromDB<HomeStat[]>("home_stats", async (supabase) =>
     supabase.from("home_stats").select("*").eq("is_active", true).order("sort_order")
   );
-  if (data && data.length > 0) return data;
-  return readCacheSection<HomeStat[]>("stats", FALLBACK_STATS);
+  const list = (data && data.length > 0) ? data : readCacheSection<HomeStat[]>("stats", FALLBACK_STATS);
+  return selectHomeStats(list);
 }
 
 // ================================================================
@@ -503,8 +672,17 @@ export async function getProcessSteps(): Promise<HomeProcessStep[]> {
   const data = await fetchFromDB<HomeProcessStep[]>("home_process_steps", async (supabase) =>
     supabase.from("home_process_steps").select("*").eq("is_active", true).order("sort_order")
   );
-  if (data && data.length > 0) return data;
-  return readCacheSection<HomeProcessStep[]>("process", FALLBACK_STEPS);
+  const list = (data && data.length > 0) ? data : readCacheSection<HomeProcessStep[]>("process", FALLBACK_STEPS);
+  const seen = new Set<string>();
+  const uniqueList: HomeProcessStep[] = [];
+  for (const step of stableSortByOrder(list)) {
+    const key = `${step.number || ""}-${step.title || ""}`.trim().toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueList.push(step);
+    }
+  }
+  return uniqueList;
 }
 
 // ================================================================
@@ -520,15 +698,23 @@ export async function getPanIndiaStats(): Promise<PanIndiaStat[]> {
   const data = await fetchFromDB<PanIndiaStat[]>("pan_india_stats", async (supabase) =>
     supabase.from("pan_india_stats").select("*").eq("is_active", true).order("sort_order")
   );
-  if (data && data.length > 0) return data;
-  const fromCache = readCacheSection<PanIndiaStat[]>("pan_india", FALLBACK_PAN_INDIA);
-  return fromCache.map((item, idx) => ({
-    id: item.id || String(idx + 1),
-    value: item.value,
-    label: item.label,
-    sort_order: item.sort_order ?? idx + 1,
-    is_active: item.is_active !== false,
-  }));
+  const rawList = (data && data.length > 0) ? data : readCacheSection<PanIndiaStat[]>("pan_india", FALLBACK_PAN_INDIA);
+  const seen = new Set<string>();
+  const uniqueList: PanIndiaStat[] = [];
+  for (const item of rawList) {
+    const key = (item.label || "").trim().toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueList.push({
+        id: item.id || String(uniqueList.length + 1),
+        value: item.value,
+        label: item.label,
+        sort_order: item.sort_order ?? uniqueList.length + 1,
+        is_active: item.is_active !== false,
+      });
+    }
+  }
+  return uniqueList;
 }
 
 // ================================================================
@@ -597,10 +783,11 @@ export async function getProjectBySlug(slug: string): Promise<CMSProject | null>
 // PRODUCTS
 // ================================================================
 export async function getProductCategories(): Promise<ProductCategory[]> {
-  const data = await fetchFromDB<ProductCategory[]>("product_categories", async (supabase) =>
-    supabase.from("product_categories").select("*").eq("is_active", true).order("sort_order")
+  const data = await fetchFromDB<ProductCategory[]>("cms_product_categories", async (supabase) =>
+    supabase.from("cms_product_categories").select("*").eq("is_active", true).order("sort_order")
   );
-  return data || [];
+  if (data && data.length > 0) return data;
+  return readCacheSection<ProductCategory[]>("product_categories", FALLBACK_PRODUCT_CATEGORIES as any);
 }
 
 export async function getProductsByCategory(categoryId: string): Promise<CMSProduct[]> {
@@ -631,8 +818,17 @@ export async function getClients(): Promise<CMSClient[]> {
   const data = await fetchFromDB<CMSClient[]>("cms_clients", async (supabase) =>
     supabase.from("cms_clients").select("*").eq("is_active", true).order("sort_order")
   );
-  if (data && data.length > 0) return data;
-  return readCacheSection<CMSClient[]>("clients", FALLBACK_CLIENTS);
+  const list = (data && data.length > 0) ? data : readCacheSection<CMSClient[]>("clients", FALLBACK_CLIENTS);
+  const seen = new Set<string>();
+  const uniqueList: CMSClient[] = [];
+  for (const client of list) {
+    const key = (client.name || "").trim().toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueList.push(client);
+    }
+  }
+  return uniqueList;
 }
 
 // ================================================================
@@ -651,9 +847,9 @@ const FALLBACK_TESTIMONIALS: CMSTestimonial[] = [
   },
   {
     id: "2",
-    quote: "Their end-to-end support from optical design to retail installation made our flagship in-store LED display rollouts smooth and flawless.",
+    quote: "Their end-to-end support from optical design to retail installation made our flagship in-store Active LED display rollouts smooth, stunning, and flawless.",
     author_name: "Neha Verma",
-    author_title: "Marketing & Retail Projects Head",
+    author_title: "VP - Retail Experience & Projects",
     author_company: "TITAN COMPANY / CARATLANE",
     is_featured: true,
     sort_order: 2,
@@ -661,12 +857,32 @@ const FALLBACK_TESTIMONIALS: CMSTestimonial[] = [
   },
   {
     id: "3",
-    quote: "Reliable, innovative and committed. ACE SELECT has been our trusted partner for nationwide banking branch branding and display systems.",
+    quote: "Reliable, innovative and committed. ACE SELECT has been our trusted partner for nationwide banking branch rebranding and display infrastructure for over a decade.",
     author_name: "Amit Khanna",
     author_title: "Chief Manager - Infrastructure & Branding",
     author_company: "STATE BANK OF INDIA",
     is_featured: true,
     sort_order: 3,
+    is_active: true,
+  },
+  {
+    id: "4",
+    quote: "The architectural display installations and facade branding by ACE SELECT exceeded our expectations in build quality, structural safety, and visual impact.",
+    author_name: "Priya Sundaram",
+    author_title: "Director - Commercial Real Estate & Workspace Design",
+    author_company: "DLF CYBERCITY",
+    is_featured: true,
+    sort_order: 4,
+    is_active: true,
+  },
+  {
+    id: "5",
+    quote: "Rapid nationwide rollout across Tier 2 and Tier 3 branches without a single hitch. Their logistical capability and fabrication consistency across India is unmatched.",
+    author_name: "Vikramaditya Rao",
+    author_title: "Head of Operations & Network Expansion",
+    author_company: "MUTHOOT FINANCE GROUP",
+    is_featured: true,
+    sort_order: 5,
     is_active: true,
   },
 ];
@@ -678,7 +894,20 @@ export async function getTestimonials(featuredOnly = false): Promise<CMSTestimon
     return q;
   });
   const list = (data && data.length > 0) ? data : readCacheSection<CMSTestimonial[]>("testimonials", FALLBACK_TESTIMONIALS);
-  return featuredOnly ? list.filter((t) => t.is_featured) : list;
+
+  const seen = new Set<string>();
+  const uniqueList: CMSTestimonial[] = [];
+  for (const item of stableSortByOrder(list)) {
+    const key = item.id ? String(item.id).toLowerCase() : `${item.author_name}-${item.author_company}`.trim().toLowerCase();
+    const contentKey = `${item.author_name}-${item.author_company}`.trim().toLowerCase();
+    if (!seen.has(key) && !seen.has(contentKey)) {
+      seen.add(key);
+      seen.add(contentKey);
+      uniqueList.push(item);
+    }
+  }
+
+  return uniqueList.filter((testimonial) => testimonial.is_active !== false && (!featuredOnly || testimonial.is_featured));
 }
 
 // ================================================================
@@ -784,3 +1013,172 @@ export async function submitEnquiry(
     return { success: false, error: message };
   }
 }
+
+// ================================================================
+// HOMEPAGE PRODUCTS & SOLUTIONS
+// ================================================================
+export interface HomepageSolutionItem {
+  id: string;
+  title: string;
+  img: string;
+  href?: string;
+  sort_order?: number;
+}
+
+export const FALLBACK_HOMEPAGE_SOLUTIONS: HomepageSolutionItem[] = [
+  { id: "1", title: "ACTIVE DIGITAL\nLED DISPLAYS", img: "/images/products/indoor-smd-page1.jpg", href: "/products", sort_order: 1 },
+  { id: "2", title: "ANDROID DIGITAL\nSTANDEES (32\"-65\")", img: "/images/products/standee-banner.jpg", href: "/products", sort_order: 2 },
+  { id: "3", title: "OUTDOOR HIGH BRIGHTNESS\nSMD SERIES", img: "/images/products/outdoor-smd-page1.jpg", href: "/products", sort_order: 3 },
+  { id: "4", title: "INTERACTIVE &\nSELF-SERVICE KIOSKS", img: "/images/projects/project-bkc-elobby.jpg", href: "/products", sort_order: 4 },
+  { id: "5", title: "STATIC SIGNAGE &\nGLOW SIGN BOARDS", img: "/images/projects/atm-kiosk-branding.jpg", href: "/products", sort_order: 5 },
+  { id: "6", title: "SIGNAGE CMS ON\nJIO SOFTWARE", img: "/images/products/product-hierarchy.jpg", href: "/products", sort_order: 6 },
+];
+
+export async function getHomepageSolutions(): Promise<HomepageSolutionItem[]> {
+  const list = readCacheSection<HomepageSolutionItem[]>("homepage_solutions", FALLBACK_HOMEPAGE_SOLUTIONS);
+  return stableSortByOrder(list);
+}
+
+// ================================================================
+// PRODUCT CATEGORIES & CATALOG
+// ================================================================
+export interface CMSProductCategory {
+  id: string;
+  slug?: string;
+  name: string;
+  icon?: string;
+  description?: string;
+  badge?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+export const FALLBACK_PRODUCT_CATEGORIES: CMSProductCategory[] = [
+  {
+    id: "active-indoor-led",
+    slug: "active-indoor-led",
+    name: "Active Indoor LED",
+    icon: "Monitor",
+    description: "High-resolution indoor LED video wall solutions for corporate, command center & broadcast environments",
+    badge: "Active LED",
+    sort_order: 1,
+    is_active: true,
+  },
+  {
+    id: "outdoor-led-displays",
+    slug: "outdoor-led-displays",
+    name: "Outdoor LED Displays",
+    icon: "Sun",
+    description: "Weather-resistant high-brightness outdoor active LED video displays and highway DOOH billboards",
+    badge: "Outdoor",
+    sort_order: 2,
+    is_active: true,
+  },
+  {
+    id: "digital-standees",
+    slug: "digital-standees",
+    name: "Digital Standees",
+    icon: "Tablet",
+    description: "Android & Windows powered commercial digital standees from 32\" to 65\" for retail and bank branches",
+    badge: "Standees",
+    sort_order: 3,
+    is_active: true,
+  },
+  {
+    id: "signage-software",
+    slug: "signage-software",
+    name: "Signage & Software",
+    icon: "Cloud",
+    description: "Architectural signage, banking kiosks, and centralized cloud CMS hosted on Jio Software",
+    badge: "Software & CMS",
+    sort_order: 4,
+    is_active: true,
+  },
+];
+
+export interface CMSProductCatalogItem {
+  id: string;
+  slug?: string;
+  name: string;
+  category: string;
+  tagline?: string;
+  badge?: string;
+  image_url?: string;
+  description?: string;
+  specs?: string[] | { label: string; value: string }[];
+  sort_order?: number;
+  is_featured?: boolean;
+  is_active?: boolean;
+}
+
+export const FALLBACK_PRODUCTS: CMSProductCatalogItem[] = [
+  {
+    id: "indoor-active-led",
+    name: "Indoor Active LED Video Wall",
+    category: "Active Indoor LED",
+    tagline: "Fine Pixel Pitch COB & SMD Display Systems",
+    badge: "P1.2 - P3.0",
+    image_url: "/images/products/indoor-smd-page1.jpg",
+    specs: [
+      "COB & SMD Fine Pixel Pitch (P1.2 to P3.0)",
+      "High refresh rate >3840Hz & 16-bit grayscale",
+      "160° ultra-wide horizontal & vertical viewing",
+    ],
+    is_featured: true,
+    is_active: true,
+  },
+  {
+    id: "outdoor-active-led",
+    name: "Outdoor High-Brightness LED Display",
+    category: "Outdoor LED Displays",
+    tagline: "IP65 Weather-Resistant DOOH Advertising Facades",
+    badge: ">6000 NITS",
+    image_url: "/images/products/outdoor-smd-page1.jpg",
+    specs: [
+      ">6000 Nits high-brightness daylight readable",
+      "IP65 waterproof all-weather die-cast cabinet",
+      "ECO energy-saving low heat dissipation IC",
+    ],
+    is_featured: true,
+    is_active: true,
+  },
+  {
+    id: "digital-standees",
+    name: "Commercial Digital Standee Displays",
+    category: "Digital Standees",
+    tagline: "Standalone Android 4K UHD Interactive Kiosks",
+    badge: "4K UHD",
+    image_url: "/images/products/standee-banner.jpg",
+    specs: [
+      "32\" to 65\" commercial-grade 4K UHD panels",
+      "4mm tempered explosion-proof protective glass",
+      "Android OS / Windows plug & play media engine",
+    ],
+    is_featured: true,
+    is_active: true,
+  },
+  {
+    id: "signage-software",
+    name: "Architectural Signage & Wayfinding Solutions",
+    category: "Signage & Software",
+    tagline: "Precision Stainless Steel, Pylons & Cloud CMS",
+    badge: "SEAMLESS",
+    image_url: "/images/products/product-hierarchy.jpg",
+    specs: [
+      "Precision CNC & Laser Cut Stainless Steel 304/316",
+      "Centralized cloud CMS hosted on Jio Software",
+      "Mission-critical 24/7 control room & banking kiosk reliability",
+    ],
+    is_featured: true,
+    is_active: true,
+  },
+];
+
+export async function getProductsCatalog(): Promise<CMSProductCatalogItem[]> {
+  const data = await fetchFromDB<CMSProductCatalogItem[]>("cms_products", async (supabase) =>
+    supabase.from("cms_products").select("*").eq("is_active", true).order("sort_order")
+  );
+  if (data && data.length > 0) return data;
+  return readCacheSection<CMSProductCatalogItem[]>("products", FALLBACK_PRODUCTS);
+}
+

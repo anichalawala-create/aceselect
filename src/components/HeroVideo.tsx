@@ -10,7 +10,7 @@ interface HeroVideoProps {
 
 export default function HeroVideo({
   videoSrc = "/home-hero.mp4",
-  poster = "/home-hero-poster.jpg",
+  poster = "",
   className = "",
 }: HeroVideoProps) {
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
@@ -18,7 +18,8 @@ export default function HeroVideo({
 
   // Normalize URLs to always point to guaranteed existing assets
   const effectiveSrc = videoSrc && videoSrc.trim() ? videoSrc : "/home-hero.mp4";
-  const effectivePoster = poster && poster.trim() ? poster : "/home-hero-poster.jpg";
+  const isDefaultVideo = effectiveSrc === "/home-hero.mp4" || effectiveSrc === "/videos/homepage-hero.mp4";
+  const effectivePoster = poster && poster.trim() ? poster : (isDefaultVideo ? "/home-hero-poster.jpg" : "");
 
   useEffect(() => {
     const video = videoRef.current;
@@ -66,21 +67,26 @@ export default function HeroVideo({
 
   return (
     <div className={`relative w-full h-full overflow-hidden ${className}`}>
-      {/* 1. Instant-loading high-resolution poster frame (always visible as foundation) */}
-      <picture className="absolute inset-0 w-full h-full pointer-events-none">
-        <img
-          src={effectivePoster}
-          alt="ACE SELECT Active LED Video Walls and Digital Displays"
-          fetchPriority="high"
-          decoding="async"
-          className="w-full h-full object-cover"
-        />
-      </picture>
+      {/* 1. Instant-loading high-resolution poster frame (visible as foundation) */}
+      {effectivePoster ? (
+        <picture className="absolute inset-0 w-full h-full pointer-events-none">
+          <img
+            src={effectivePoster}
+            alt="ACE SELECT Active LED Video Walls and Digital Displays"
+            fetchPriority="high"
+            decoding="async"
+            className="w-full h-full object-cover"
+          />
+        </picture>
+      ) : (
+        <div className="absolute inset-0 w-full h-full bg-[#0B0F2B]" />
+      )}
 
       {/* 2. Hardware-accelerated background video with multi-source fallback */}
       <video
+        key={effectiveSrc}
         ref={videoRef}
-        poster={effectivePoster}
+        poster={effectivePoster || undefined}
         preload="auto"
         autoPlay
         loop
@@ -94,10 +100,6 @@ export default function HeroVideo({
         }`}
       >
         <source src={effectiveSrc} type="video/mp4" />
-        {effectiveSrc !== "/home-hero.mp4" && (
-          <source src="/home-hero.mp4" type="video/mp4" />
-        )}
-        <source src="/videos/homepage-hero.mp4" type="video/mp4" />
       </video>
 
       {/* 3. Dark gradient overlay for typography readability */}

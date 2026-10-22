@@ -46,6 +46,7 @@ type EditorItem = ContentItem & { clientId: string };
 const PAGES = [
   { slug: "home", label: "Home", path: "/" },
   { slug: "who-we-are", label: "Who We Are", path: "/who-we-are" },
+  { slug: "products", label: "Products", path: "/products" },
   { slug: "services", label: "Services", path: "/services" },
   { slug: "industries", label: "Industries", path: "/industries" },
   { slug: "projects", label: "Projects", path: "/projects" },

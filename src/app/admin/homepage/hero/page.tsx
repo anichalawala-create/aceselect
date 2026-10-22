@@ -69,8 +69,9 @@ export default function AdminHeroPage() {
       });
       const data = await res.json();
       if (data.success && data.files?.length > 0) {
-        const uploadedVideo = data.files.find((f: any) => f.type === "video");
-        const uploadedImage = data.files.find((f: any) => f.type === "image");
+        const uploadedFiles = data.files as Array<{ type?: string; url?: string }>;
+        const uploadedVideo = uploadedFiles.find((file) => file.type === "video");
+        const uploadedImage = uploadedFiles.find((file) => file.type === "image");
         
         if (uploadedVideo) {
           update("background_video_url", uploadedVideo.url);
@@ -85,7 +86,7 @@ export default function AdminHeroPage() {
       } else {
         alert(data.error || "Upload failed");
       }
-    } catch (err) {
+    } catch {
       alert("An error occurred during upload.");
     } finally {
       setUploading(false);
@@ -113,8 +114,8 @@ export default function AdminHeroPage() {
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (err: any) {
-      alert("Error saving hero content: " + (err.message || String(err)));
+    } catch (err: unknown) {
+      alert("Error saving hero content: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -144,7 +145,15 @@ export default function AdminHeroPage() {
       {/* Info */}
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
         <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-        <p className="text-xs text-blue-700">Changes will be reflected on the homepage immediately upon saving. The background video is managed separately via the public media folder.</p>
+        <div className="text-xs text-blue-700">
+          <p className="font-semibold">How to change the homepage video</p>
+          <ol className="mt-1 list-decimal list-inside space-y-0.5">
+            <li>Upload or drag a new MP4 or WebM file into the Background Video box below.</li>
+            <li>Wait until the upload finishes and confirm the new filename under Current Video.</li>
+            <li>Click <strong>Save Changes</strong> at the top right.</li>
+            <li>Refresh the homepage. You do not need to replace a file in the public folder.</li>
+          </ol>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -158,7 +167,7 @@ export default function AdminHeroPage() {
               <div className="space-y-1.5">
                 <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">Eyebrow Text</label>
                 <input value={form.eyebrow_text} onChange={(e) => update("eyebrow_text", e.target.value)} className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#283A97]/20 focus:border-[#283A97]" />
-                <p className="text-xs text-neutral-400">Small text above the main headline — e.g. "INDIAN OEM & MANUFACTURER | ..."</p>
+                <p className="text-xs text-neutral-400">Small text above the main headline — e.g. &quot;INDIAN OEM &amp; MANUFACTURER | ...&quot;</p>
               </div>
 
               <div className="space-y-1.5">

@@ -179,6 +179,25 @@ INSERT INTO hero_content (eyebrow_text, background_video_url, poster_url)
 SELECT 'INDIAN OEM & MANUFACTURER | ACTIVE LED & DIGITAL SIGNAGE', '/home-hero.mp4', '/home-hero-poster.jpg'
 WHERE NOT EXISTS (SELECT 1 FROM hero_content);
 
+-- Repair older partial installs that created more than one active hero row.
+WITH ranked_hero_rows AS (
+  SELECT
+    id,
+    row_number() OVER (
+      ORDER BY updated_at DESC NULLS LAST, id DESC
+    ) AS row_number
+  FROM hero_content
+  WHERE is_active = true
+)
+DELETE FROM hero_content
+WHERE id IN (
+  SELECT id FROM ranked_hero_rows WHERE row_number > 1
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS hero_content_one_active_idx
+  ON hero_content (is_active)
+  WHERE is_active = true;
+
 INSERT INTO home_about (eyebrow, headline, body_paragraph1, body_paragraph2)
 SELECT 'ABOUT ACE SELECT', 'CREATIVE THINKING. DESIGNING BEYOND THE BOX.',
   'At ACE SELECT, creative thinking is the driving force of our designing process.',
