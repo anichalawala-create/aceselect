@@ -355,6 +355,344 @@ export async function syncHomeHeroVideoHeroContent(
   if (error) throw error;
 }
 
+/**
+ * Synchronize full Homepage > Hero content (text, CTAs, vertical labels, media)
+ * into both the local page_content cache and the cms_page_content remote table.
+ */
+export async function syncHomeHeroContent(
+  supabase: SupabaseClient | null,
+  data: Record<string, unknown>,
+): Promise<void> {
+  const textFields = [
+    { key: "hero.eyebrow", label: "Hero eyebrow", value: data.eyebrow_text, sort_order: 10 },
+    { key: "hero.headline_line1", label: "Hero headline line 1", value: data.headline_line1, sort_order: 11 },
+    { key: "hero.headline_line2", label: "Hero headline line 2", value: data.headline_line2, sort_order: 12 },
+    { key: "hero.headline", label: "Hero headline", value: [data.headline_line1, data.headline_line2].filter(Boolean).join("\n"), sort_order: 13 },
+    { key: "hero.subheadline", label: "Hero subheadline", value: data.subheadline, sort_order: 14 },
+    { key: "hero.bottom_tagline", label: "Hero bottom tagline", value: data.bottom_tagline, sort_order: 15 },
+    { key: "hero.cta_primary_label", label: "Hero primary CTA label", value: data.cta_primary_label, sort_order: 16 },
+    { key: "hero.cta_primary_href", label: "Hero primary CTA target", value: data.cta_primary_href, sort_order: 17 },
+    { key: "hero.cta_secondary_label", label: "Hero secondary CTA label", value: data.cta_secondary_label, sort_order: 18 },
+    { key: "hero.cta_secondary_href", label: "Hero secondary CTA target", value: data.cta_secondary_href, sort_order: 19 },
+    { key: "hero.vertical_labels", label: "Hero vertical labels", value: Array.isArray(data.vertical_labels) ? data.vertical_labels.join("\n") : (typeof data.vertical_labels === "string" ? data.vertical_labels : ""), sort_order: 20 },
+  ];
+
+  const now = new Date().toISOString();
+  const rows = readPageContentCache();
+  let cache: Record<string, unknown> = {};
+  try {
+    if (fs.existsSync(CMS_CACHE_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(CMS_CACHE_PATH, "utf-8"));
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        cache = parsed as Record<string, unknown>;
+      }
+    }
+  } catch (error) {
+    console.warn("[CMS] Error reading hero cache:", error);
+  }
+
+  const cachedHero = cache.hero && typeof cache.hero === "object" && !Array.isArray(cache.hero)
+    ? (cache.hero as Record<string, unknown>)
+    : {};
+
+  for (const field of textFields) {
+    if (field.value === undefined || field.value === null) continue;
+    const stringVal = String(field.value);
+    const existingIndex = rows.findIndex(
+      (r) => r.page_slug === "home" && r.content_key === field.key,
+    );
+    if (existingIndex >= 0) {
+      rows[existingIndex] = {
+        ...rows[existingIndex],
+        content_type: "text",
+        value: stringVal,
+        updated_at: now,
+      };
+    } else {
+      rows.push({
+        id: `local-home-${field.key.replace(/\./g, "-")}`,
+        page_slug: "home",
+        content_key: field.key,
+        label: field.label,
+        content_type: "text",
+        value: stringVal,
+        media_url: null,
+        alt_text: null,
+        sort_order: field.sort_order,
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+  }
+
+  if (typeof data.background_video_url === "string") {
+    const videoVal = data.background_video_url.trim();
+    cachedHero.background_video_url = videoVal;
+    const bgIndex = rows.findIndex((r) => r.page_slug === "home" && r.content_key === HOME_HERO_BACKGROUND_KEY);
+    if (bgIndex >= 0) {
+      rows[bgIndex] = { ...rows[bgIndex], value: videoVal, media_url: videoVal || null, updated_at: now };
+    } else {
+      rows.push({
+        id: "local-home-hero-background",
+        page_slug: "home",
+        content_key: HOME_HERO_BACKGROUND_KEY,
+        label: "Hero background video",
+        content_type: "video",
+        value: videoVal,
+        media_url: videoVal || null,
+        alt_text: "ACE SELECT hero video",
+        sort_order: 30,
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+  }
+
+  if (typeof data.poster_url === "string") {
+    const posterVal = data.poster_url.trim();
+    cachedHero.poster_url = posterVal;
+    const pIndex = rows.findIndex((r) => r.page_slug === "home" && r.content_key === HOME_HERO_POSTER_KEY);
+    if (pIndex >= 0) {
+      rows[pIndex] = { ...rows[pIndex], value: posterVal, media_url: posterVal || null, updated_at: now };
+    } else {
+      rows.push({
+        id: "local-home-hero-poster",
+        page_slug: "home",
+        content_key: HOME_HERO_POSTER_KEY,
+        label: "Hero poster image",
+        content_type: "image",
+        value: posterVal,
+        media_url: posterVal || null,
+        alt_text: "ACE SELECT homepage hero poster",
+        sort_order: 31,
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+  }
+
+  cache.page_content = rows;
+  cache.hero = { ...cachedHero, ...data };
+  fs.writeFileSync(CMS_CACHE_PATH, `${JSON.stringify(cache, null, 2)}\n`, "utf-8");
+
+  if (supabase) {
+    for (const field of textFields) {
+      if (field.value === undefined || field.value === null) continue;
+      const stringVal = String(field.value);
+      try {
+        const { data: matched } = await supabase
+          .from("cms_page_content")
+          .select("id")
+          .eq("page_slug", "home")
+          .eq("content_key", field.key)
+          .maybeSingle();
+
+        if (matched?.id) {
+          await supabase.from("cms_page_content").update({ value: stringVal, updated_at: now }).eq("id", matched.id);
+        } else {
+          await supabase.from("cms_page_content").insert({
+            page_slug: "home",
+            content_key: field.key,
+            label: field.label,
+            content_type: "text",
+            value: stringVal,
+            sort_order: field.sort_order,
+            is_active: true,
+          });
+        }
+      } catch (e) {
+        console.warn(`[CMS] Error updating cms_page_content for ${field.key}:`, e);
+      }
+    }
+  }
+}
+
+/**
+ * Synchronize full Homepage > About content into both the local page_content cache
+ * and the cms_page_content remote table.
+ */
+export async function syncHomeAboutContent(
+  supabase: SupabaseClient | null,
+  data: Record<string, unknown>,
+): Promise<void> {
+  const textFields = [
+    { key: "about.eyebrow", label: "About eyebrow", value: data.eyebrow, sort_order: 40 },
+    { key: "about.headline", label: "About headline", value: data.headline, sort_order: 41 },
+    { key: "about.body1", label: "About body paragraph 1", value: data.body1 || data.body_paragraph1 || "", sort_order: 42 },
+    { key: "about.body2", label: "About body paragraph 2", value: data.body2 || data.body_paragraph2 || "", sort_order: 43 },
+    ...(data.image_url ? [{ key: "about.image", label: "About image", value: data.image_url, sort_order: 44 }] : []),
+  ];
+
+  const now = new Date().toISOString();
+  const rows = readPageContentCache();
+  let cache: Record<string, unknown> = {};
+  try {
+    if (fs.existsSync(CMS_CACHE_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(CMS_CACHE_PATH, "utf-8"));
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        cache = parsed as Record<string, unknown>;
+      }
+    }
+  } catch (error) {
+    console.warn("[CMS] Error reading about cache:", error);
+  }
+
+  for (const field of textFields) {
+    if (field.value === undefined || field.value === null) continue;
+    const stringVal = String(field.value);
+    const existingIndex = rows.findIndex(
+      (r) => r.page_slug === "home" && r.content_key === field.key,
+    );
+    if (existingIndex >= 0) {
+      rows[existingIndex] = {
+        ...rows[existingIndex],
+        content_type: field.key === "about.image" ? "image" : "text",
+        value: stringVal,
+        ...(field.key === "about.image" ? { media_url: stringVal } : {}),
+        updated_at: now,
+      };
+    } else {
+      rows.push({
+        id: `local-home-${field.key.replace(/\./g, "-")}`,
+        page_slug: "home",
+        content_key: field.key,
+        label: field.label,
+        content_type: field.key === "about.image" ? "image" : "text",
+        value: stringVal,
+        media_url: field.key === "about.image" ? stringVal : null,
+        alt_text: null,
+        sort_order: field.sort_order,
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+      });
+    }
+  }
+
+  cache.page_content = rows;
+  cache.about = { ...(cache.about as Record<string, unknown> || {}), ...data };
+  fs.writeFileSync(CMS_CACHE_PATH, `${JSON.stringify(cache, null, 2)}\n`, "utf-8");
+
+  if (supabase) {
+    for (const field of textFields) {
+      if (field.value === undefined || field.value === null) continue;
+      const stringVal = String(field.value);
+      try {
+        const { data: matched } = await supabase
+          .from("cms_page_content")
+          .select("id")
+          .eq("page_slug", "home")
+          .eq("content_key", field.key)
+          .maybeSingle();
+
+        if (matched?.id) {
+          await supabase.from("cms_page_content").update({ value: stringVal, updated_at: now }).eq("id", matched.id);
+        } else {
+          await supabase.from("cms_page_content").insert({
+            page_slug: "home",
+            content_key: field.key,
+            label: field.label,
+            content_type: field.key === "about.image" ? "image" : "text",
+            value: stringVal,
+            sort_order: field.sort_order,
+            is_active: true,
+          });
+        }
+      } catch (e) {
+        console.warn(`[CMS] Error updating cms_page_content for ${field.key}:`, e);
+      }
+    }
+  }
+}
+
+/**
+ * Mirror Page Content editor saves (from /admin/content) back into the
+ * dedicated hero_content and home_about tables and cache sections.
+ */
+export async function syncPageContentToHeroAndAbout(
+  supabase: SupabaseClient | null,
+  rows: PageContent[],
+): Promise<void> {
+  const homeRows = rows.filter((r) => r.page_slug === "home");
+  if (homeRows.length === 0) return;
+
+  const heroUpdates: Record<string, unknown> = {};
+  const aboutUpdates: Record<string, unknown> = {};
+
+  for (const r of homeRows) {
+    if (r.content_key === "hero.eyebrow") heroUpdates.eyebrow_text = r.value;
+    else if (r.content_key === "hero.headline_line1") heroUpdates.headline_line1 = r.value;
+    else if (r.content_key === "hero.headline_line2") heroUpdates.headline_line2 = r.value;
+    else if (r.content_key === "hero.subheadline") heroUpdates.subheadline = r.value;
+    else if (r.content_key === "hero.bottom_tagline") heroUpdates.bottom_tagline = r.value;
+    else if (r.content_key === "hero.cta_primary_label") heroUpdates.cta_primary_label = r.value;
+    else if (r.content_key === "hero.cta_primary_href") heroUpdates.cta_primary_href = r.value;
+    else if (r.content_key === "hero.cta_secondary_label") heroUpdates.cta_secondary_label = r.value;
+    else if (r.content_key === "hero.cta_secondary_href") heroUpdates.cta_secondary_href = r.value;
+    else if (r.content_key === "hero.background") heroUpdates.background_video_url = r.media_url || r.value;
+    else if (r.content_key === "hero.poster") heroUpdates.poster_url = r.media_url || r.value;
+    else if (r.content_key === "hero.vertical_labels") {
+      heroUpdates.vertical_labels = r.value.split("\n").map((s) => s.trim()).filter(Boolean);
+    }
+    else if (r.content_key === "about.eyebrow") aboutUpdates.eyebrow = r.value;
+    else if (r.content_key === "about.headline") aboutUpdates.headline = r.value;
+    else if (r.content_key === "about.body1") aboutUpdates.body_paragraph1 = r.value;
+    else if (r.content_key === "about.body2") aboutUpdates.body_paragraph2 = r.value;
+    else if (r.content_key === "about.image") aboutUpdates.image_url = r.media_url || r.value;
+  }
+
+  let cache: Record<string, unknown> = {};
+  try {
+    if (fs.existsSync(CMS_CACHE_PATH)) {
+      cache = JSON.parse(fs.readFileSync(CMS_CACHE_PATH, "utf-8"));
+    }
+  } catch {}
+
+  if (Object.keys(heroUpdates).length > 0) {
+    cache.hero = { ...(cache.hero as Record<string, unknown> || {}), ...heroUpdates };
+    if (supabase) {
+      try {
+        const { data: existing } = await supabase
+          .from("hero_content")
+          .select("id")
+          .eq("is_active", true)
+          .order("updated_at", { ascending: false })
+          .limit(1);
+        if (existing?.[0]?.id) {
+          await supabase.from("hero_content").update(heroUpdates).eq("id", existing[0].id);
+        } else {
+          await supabase.from("hero_content").insert({ ...heroUpdates, is_active: true });
+        }
+      } catch (err) {
+        console.warn("[CMS] Error mirroring to hero_content:", err);
+      }
+    }
+  }
+
+  if (Object.keys(aboutUpdates).length > 0) {
+    cache.about = { ...(cache.about as Record<string, unknown> || {}), ...aboutUpdates };
+    if (supabase) {
+      try {
+        const { data: existing } = await supabase.from("home_about").select("id").limit(1);
+        if (existing?.[0]?.id) {
+          await supabase.from("home_about").update(aboutUpdates).eq("id", existing[0].id);
+        } else {
+          await supabase.from("home_about").insert(aboutUpdates);
+        }
+      } catch (err) {
+        console.warn("[CMS] Error mirroring to home_about:", err);
+      }
+    }
+  }
+
+  try {
+    fs.writeFileSync(CMS_CACHE_PATH, `${JSON.stringify(cache, null, 2)}\n`, "utf-8");
+  } catch {}
+}
+
 // ================================================================
 // Helper: fetch from Supabase OR return null (triggers fallback)
 // ================================================================

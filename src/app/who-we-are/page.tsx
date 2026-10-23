@@ -480,7 +480,7 @@ export default async function WhoWeArePage() {
                     OUR COMMITMENT
                   </h4>
                   <p className="text-neutral-500 font-body text-xs leading-relaxed">
-                    Flawless turnkey Design-to-Build execution, sustainable craftsmanship, and relentless dedication to timely delivery.
+                    {company.mission || "Flawless turnkey Design-to-Build execution, sustainable craftsmanship, and relentless dedication to timely delivery."}
                   </p>
                 </div>
               </div>

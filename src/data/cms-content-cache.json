@@ -6,13 +6,13 @@
       "content_key": "hero.eyebrow",
       "label": "Hero eyebrow",
       "content_type": "text",
-      "value": "INDIAN OEM & MANUFACTURER | ACTIVE LED & DIGITAL SIGNAGE",
+      "value": "OEM & Manufacturer's · Mumbai, India",
       "media_url": null,
       "alt_text": null,
       "sort_order": 10,
       "is_active": true,
       "created_at": "2026-10-16T00:00:00.000Z",
-      "updated_at": "2026-10-16T00:00:00.000Z"
+      "updated_at": "2026-10-23T02:40:34.572Z"
     },
     {
       "id": "local-home-hero-background",
@@ -104,13 +104,13 @@
       "content_key": "hero.headline_line1",
       "label": "Hero headline line 1",
       "content_type": "text",
-      "value": "ENGINEERED FOR INDIA.",
+      "value": "ACE SELECT™  (Possibilities Infinities)",
       "media_url": null,
       "alt_text": null,
       "sort_order": 11,
       "is_active": true,
       "created_at": "2026-10-16T00:00:00.000Z",
-      "updated_at": "2026-10-16T00:00:00.000Z"
+      "updated_at": "2026-10-23T02:40:34.573Z"
     },
     {
       "id": "local-home-hero-line2",
@@ -118,13 +118,13 @@
       "content_key": "hero.headline_line2",
       "label": "Hero headline line 2",
       "content_type": "text",
-      "value": "DESIGNED FOR EVERY APPLICATION.",
+      "value": "LED Video Walls System | Digital Displays System | AV Solutions ",
       "media_url": null,
       "alt_text": null,
       "sort_order": 12,
       "is_active": true,
       "created_at": "2026-10-16T00:00:00.000Z",
-      "updated_at": "2026-10-16T00:00:00.000Z"
+      "updated_at": "2026-10-23T02:40:34.573Z"
     },
     {
       "id": "local-home-about",
@@ -223,18 +223,42 @@
       "is_active": true,
       "created_at": "2026-10-22T02:39:25.027Z",
       "updated_at": "2026-10-22T02:39:25.027Z"
+    },
+    {
+      "id": "local-home-hero-subheadline",
+      "page_slug": "home",
+      "content_key": "hero.subheadline",
+      "label": "hero.subheadline",
+      "content_type": "text",
+      "value": "ACE SELECT™ is a brand of ACEDK SELECT PRIVATE LIMITED, an Indian OEM and manufacturer of high-performance LED video wall display systems. We deliver advanced LED video walls, digital display systems, and integrated audiovisual solutions for government departments, banks, corporates, and institutional customers across India.",
+      "sort_order": 10,
+      "is_active": true,
+      "created_at": "2026-10-23T02:40:34.573Z",
+      "updated_at": "2026-10-23T02:40:34.573Z"
+    },
+    {
+      "id": "local-home-hero-bottom_tagline",
+      "page_slug": "home",
+      "content_key": "hero.bottom_tagline",
+      "label": "hero.bottom_tagline",
+      "content_type": "text",
+      "value": "Service You Can Trust. Support You Can Rely On. Nationwide.",
+      "sort_order": 10,
+      "is_active": true,
+      "created_at": "2026-10-23T02:40:34.573Z",
+      "updated_at": "2026-10-23T02:40:34.573Z"
     }
   ],
   "hero": {
-    "eyebrow_text": "ENGINEERING THE NEXT GENERATION OF LED DISPLAY SYSTEMS",
-    "headline_line1": "OEM & Manufacturer’s of LED Video Wall Systems",
-    "headline_line2": "Engineered for Performance & Supported for the Long Run.",
-    "subheadline": "ACE SELECT delivers Active LED Video Walls System and Digital Signage Display Systems, backed by application-focused engineering, quality-led integration, and responsive after-sales service.",
+    "eyebrow_text": "OEM & Manufacturer's · Mumbai, India",
+    "headline_line1": "ACE SELECT™  (Possibilities Infinities)",
+    "headline_line2": "LED Video Walls System | Digital Displays System | AV Solutions ",
+    "subheadline": "ACE SELECT™ is a brand of ACEDK SELECT PRIVATE LIMITED, an Indian OEM and manufacturer of high-performance LED video wall display systems. We deliver advanced LED video walls, digital display systems, and integrated audiovisual solutions for government departments, banks, corporates, and institutional customers across India.",
     "cta_primary_label": "EXPLORE OUR WORK",
     "cta_primary_href": "/projects",
     "cta_secondary_label": "GET A QUOTE",
     "cta_secondary_href": "/contact",
-    "bottom_tagline": "POSSIBILITIES INFINITE",
+    "bottom_tagline": "Service You Can Trust. Support You Can Rely On. Nationwide.",
     "vertical_labels": [
       "GOVERNMENT",
       "BANKING",
@@ -686,11 +710,47 @@
     }
   ],
   "homepage_solutions": [
-    { "id": "1", "title": "ACTIVE DIGITAL\nLED DISPLAYS", "img": "/images/products/indoor-smd-page1.jpg", "href": "/products", "sort_order": 1 },
-    { "id": "2", "title": "ANDROID DIGITAL\nSTANDEES (32\"-65\")", "img": "/images/products/standee-banner.jpg", "href": "/products", "sort_order": 2 },
-    { "id": "3", "title": "OUTDOOR HIGH BRIGHTNESS\nSMD SERIES", "img": "/images/products/outdoor-smd-page1.jpg", "href": "/products", "sort_order": 3 },
-    { "id": "4", "title": "INTERACTIVE &\nSELF-SERVICE KIOSKS", "img": "/images/projects/project-bkc-elobby.jpg", "href": "/products", "sort_order": 4 },
-    { "id": "5", "title": "STATIC SIGNAGE &\nGLOW SIGN BOARDS", "img": "/images/projects/atm-kiosk-branding.jpg", "href": "/products", "sort_order": 5 },
-    { "id": "6", "title": "SIGNAGE CMS ON\nJIO SOFTWARE", "img": "/images/products/product-hierarchy.jpg", "href": "/products", "sort_order": 6 }
+    {
+      "id": "1",
+      "title": "ACTIVE DIGITAL\nLED DISPLAYS",
+      "img": "/images/products/indoor-smd-page1.jpg",
+      "href": "/products",
+      "sort_order": 1
+    },
+    {
+      "id": "2",
+      "title": "ANDROID DIGITAL\nSTANDEES (32\"-65\")",
+      "img": "/images/products/standee-banner.jpg",
+      "href": "/products",
+      "sort_order": 2
+    },
+    {
+      "id": "3",
+      "title": "OUTDOOR HIGH BRIGHTNESS\nSMD SERIES",
+      "img": "/images/products/outdoor-smd-page1.jpg",
+      "href": "/products",
+      "sort_order": 3
+    },
+    {
+      "id": "4",
+      "title": "INTERACTIVE &\nSELF-SERVICE KIOSKS",
+      "img": "/images/projects/project-bkc-elobby.jpg",
+      "href": "/products",
+      "sort_order": 4
+    },
+    {
+      "id": "5",
+      "title": "STATIC SIGNAGE &\nGLOW SIGN BOARDS",
+      "img": "/images/projects/atm-kiosk-branding.jpg",
+      "href": "/products",
+      "sort_order": 5
+    },
+    {
+      "id": "6",
+      "title": "SIGNAGE CMS ON\nJIO SOFTWARE",
+      "img": "/images/products/product-hierarchy.jpg",
+      "href": "/products",
+      "sort_order": 6
+    }
   ]
 }

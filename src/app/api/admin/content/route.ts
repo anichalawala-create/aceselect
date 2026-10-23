@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getCurrentAdminUser, getSupabaseAdmin, isSupabaseAdminError } from "@/lib/auth";
-import { syncHomeHeroVideoCache, syncHomeHeroVideoPageContent, syncCompanyVideoCache } from "@/lib/cms-service";
+import {
+  syncHomeHeroVideoCache,
+  syncHomeHeroVideoPageContent,
+  syncCompanyVideoCache,
+  syncHomeHeroContent,
+  syncHomeAboutContent,
+} from "@/lib/cms-service";
 import fs from "fs";
 import path from "path";
 
@@ -375,6 +381,7 @@ export async function POST(req: Request) {
       if (typeof data.background_video_url === "string" || typeof data.poster_url === "string") {
         await syncHomeHeroVideoPageContent(supabase, data.background_video_url, data.poster_url);
       }
+      await syncHomeHeroContent(supabase, heroFields);
     } else if (section === "about") {
       const aboutFields = {
         eyebrow: data.eyebrow,
@@ -389,6 +396,7 @@ export async function POST(req: Request) {
       } else {
         await supabase.from("home_about").insert(aboutFields);
       }
+      await syncHomeAboutContent(supabase, aboutFields);
     } else if (section === "stats") {
       if (Array.isArray(data)) {
         for (let i = 0; i < data.length; i++) {
@@ -729,7 +737,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      revalidatePath("/");
+      revalidatePath("/", "layout");
     } catch (e) {
       // ignore in non-request contexts
     }

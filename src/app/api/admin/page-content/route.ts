@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient, isSupabaseConfigured } from "@/lib/supabase";
 import { getCurrentAdminUser } from "@/lib/auth";
 import {
   readPageContentCache,
   syncHomeHeroVideoCache,
   syncHomeHeroVideoHeroContent,
+  syncPageContentToHeroAndAbout,
   writePageContentCache,
 } from "@/lib/cms-service";
 import type { PageContent, PageContentType } from "@/types/cms";
@@ -329,6 +331,10 @@ export async function POST(req: Request) {
       if (heroVideo) {
         syncHomeHeroVideoCache(heroVideo.media_url || heroVideo.value || "");
       }
+      await syncPageContentToHeroAndAbout(null, changedRows);
+      try {
+        revalidatePath("/", "layout");
+      } catch {}
     } catch (error) {
       return errorResponse(error instanceof Error ? error.message : "Unable to persist the local page-content cache.", 500);
     }
@@ -414,6 +420,10 @@ export async function POST(req: Request) {
     if (heroVideo) {
       syncHomeHeroVideoCache(heroVideo.media_url || heroVideo.value || "");
     }
+    await syncPageContentToHeroAndAbout(supabase, persistedRows);
+    try {
+      revalidatePath("/", "layout");
+    } catch {}
   } catch (error) {
     return errorResponse(
       "Page content was saved to Supabase, but the local cache could not be updated.",
@@ -513,6 +523,10 @@ export async function DELETE(req: Request) {
       { supabase_persisted: true, local_cache_persisted: false, cache_error: error instanceof Error ? error.message : "Unknown cache error." },
     );
   }
+
+  try {
+    revalidatePath("/", "layout");
+  } catch {}
 
   return NextResponse.json({ success: true, local_cache_persisted: true, supabase_persisted: true, ...(auditError ? { audit_warning: auditError } : {}) });
 }
